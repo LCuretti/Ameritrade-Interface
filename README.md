@@ -5,6 +5,9 @@ TDAPI requests table:
 
 ![Screenshot](TDAPITable.jpg)
 
+TDStream subscription table:
+
+![Screenshot](TDStreamerTable.png)
 
 TDAPI TO DO: 
 
