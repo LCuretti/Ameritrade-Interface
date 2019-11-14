@@ -67,7 +67,7 @@ class TDAuthentication(object):
                   TD Ameritrade Application. A must in order to get the access token
                   
             NAME: account_id
-            DESC: TD Account number. Needed in order to save or retrive account pass, user and refreshtoken.
+            DESC: TD Account number. Needed in order to save or retrieve account pass, user and refreshtoken.
 
             NAME: account_cache
             DESC: If True, User data will be stored.
@@ -129,18 +129,18 @@ class TDAuthentication(object):
             
             Need to Authenticate providing User and Password or through the browser.
             
-            This authentication is only necesarly each 3 month if the refreshtoken is saved (refresh_cache=True)
+            This authentication is only necessary each 3 month if the refreshtoken is saved (refresh_cache=True)
             User may choose to save the refreshtoken that allows to handle most of the account but Money Transfers for example or
-            Save the account data giving full access, and alowing this authentication to be done without any future user interaction.
+            Save the account data giving full access, and allowing this authentication to be done without any future user interaction.
             The API store the data linked to the account number, so multiple user can use it in the same computer.
             
             The single_access make the API to not store anything, not even in memory. For the cases you are logging in others computer.
-            If that the case will be necesarly to go through full authentication each 30 min.
+            If that the case will be necessary to go through full authentication each 30 min.
             
             The API can obtain User and Password in the followings ways:
-                1)They can be pass to the object when creating. If account_cache is true they will be stored and will not be necesary to pass them again.
+                1)They can be pass to the object when creating. If account_cache is true they will be stored and will not be necessary to pass them again.
                 2)If account_cache is True the user and password will be load rom the file.
-                3)If chromedriver is available and the previous 2 ways did not aply, then user and password will be required in the command line.
+                3)If chromedriver is available and the previous 2 ways did not apply, then user and password will be required in the command line.
                 4)If nothing is found from command line, webpage will be prompted for manual authentication.
                 5)In the case chrome driver is not available. Command line will provide a link where user can authenticate and grab the code to paste back in the command line. 
                     (Manual way)
@@ -153,7 +153,7 @@ class TDAuthentication(object):
         # build the URL and store it in a new variable
         url = 'https://auth.tdameritrade.com/auth?response_type=code&redirect_uri=' + up.quote(self.redirect_uri) + '&client_id=' + up.quote(client_code)
         
-        # Fully automated oauth2 authentication (if tdauser and tdapass were intputed into the function, or found as environment variables)
+        # Fully automated oauth2 authentication (if tdauser and tdapass were inputed into the function, or found as environment variables)
         if self.account_user == None or self.password == None:
             # user and passwrd stored retrive them
             if self.account_cache and os.path.isfile('./{}.pickle'.format(self.account_id)):
@@ -169,7 +169,7 @@ class TDAuthentication(object):
         #get windows user name to point chrome driver
         user = getpass.getuser()
         
-        # In order to auto-authenticate is necesary to have chromedriver. The standard path is C:/Users/{windows user}/chromedriver
+        # In order to auto-authenticate is necessary to have chromedriver. The standard path is C:/Users/{windows user}/chromedriver
         # define the location of the Chrome Driver
         options = webdriver.ChromeOptions()
         options.binary_location = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
@@ -201,7 +201,7 @@ class TDAuthentication(object):
                 driver.find_element_by_id('accept').click()
         
                 driver.find_element_by_id('accept').click()
-                #wait till get the code that is the url of the fordwarded page.
+                #wait till get the code that is the url of the forwarded page.
                 while 1:
                     try:
                         #grab the part we need, and decode it.
@@ -224,7 +224,7 @@ class TDAuthentication(object):
 
         # if not Chromedriver
         else:
-            # aks the user to go to the URL provided, they will be prompted to authenticate themsevles.
+            # aks the user to go to the URL provided, they will be prompted to authenticate themselves.
             print('Please go to URL provided authorize your account: {}'.format(self.state['authorization_url']))
         
             # ask the user to take the final URL after authentication and paste here so we can parse.
@@ -285,7 +285,7 @@ class TDAuthentication(object):
         
     def refresh_access_token(self):
         '''
-            refresh teh access token providing the refreshtoken. It will run each 30 min.
+            refresh the access token providing the refreshtoken. It will run each 30 min.
         '''
         
         resp = requests.post('https://api.tdameritrade.com/v1/oauth2/token',
@@ -308,7 +308,7 @@ class TDAuthentication(object):
         '''
             Verify if the access token is valid and update it if neccesarly.
             We you call it before any API request in order to avoid expiration.
-            After go throught it ensures that the object token is still valid for requests.
+            After go through it ensures that the object token is still valid for requests.
         '''
         
         if self.single_access:
