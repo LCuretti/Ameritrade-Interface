@@ -3,5 +3,4 @@ Ameritrade interface to handle Authentication, streaming subscriptions and API r
 
 TDAPI TO DO: Add customized create_order
 
-
-             DataFrame output(now is only json)
+             Add DataFrame output so the request could choose between json and DataFrame
