@@ -38,11 +38,11 @@ TDStreamer-test-py:
 
 TDAPI requests table:
 
-![Screenshot](TDAPITable.png)
+![Screenshot](TDAPITable.jpg)
 
 TDStream subscription table:
 
-![Screenshot](TDStreamerTable.jpg)
+![Screenshot](TDStreamerTable.png)
 
 TDAPI TO DO: 
 
