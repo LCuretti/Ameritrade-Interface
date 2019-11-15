@@ -1,5 +1,5 @@
-# Ameritrade-Interface
-Ameritrade Python interface to handle Authentication, WebSocket streaming subscriptions and API requests
+# Ameritrade Python Interface
+Handles Authentication, WebSocket streaming subscriptions and API requests
 
 TDAuthentication.py:
   Keeps a valid token access to be use by TDAPI(endpoint requests)
