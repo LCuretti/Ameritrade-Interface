@@ -42,7 +42,7 @@ TDAPI requests table:
 
 TDStream subscription table:
 
-![Screenshot](TDStreamerTable.png)
+![Screenshot](TDStreamerTable.jpg)
 
 TDAPI TO DO: 
 
