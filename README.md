@@ -12,6 +12,7 @@ TDAPI.py:
   
 TDAPI-Test.py:
   Has multiple endpoints check for the TDAPI file
+  Added customed create orders
   
 TDStream.py:
   Handle all subscription for WebSocket streaming. SUBS, UNSUBS, ADD, LOGIN, LOGOUT, QOS
@@ -30,8 +31,6 @@ TDStream subscription table:
 ![Screenshot](TDStreamerTable.png)
 
 TDAPI TO DO: 
-
-              Add customized create_order.
 
               Add DataFrame output so the requester could choose between json and DataFrame.
               
