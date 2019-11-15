@@ -2,31 +2,36 @@
 Handles Authentication, WebSocket streaming subscriptions and API requests
 
 TDAuthentication.py:
-  Keeps a valid token access to be use by TDAPI(endpoint requests).
+                    Keeps a valid token access to be use by TDAPI(endpoint requests).
   
-                    It can be run without any preview setup as it handle different authentication methods. Full Automated where account info will be stored for future authentication or Full Manual where you have to authenticate each 30 min.
+                    It can be run without any preview setup as it handle different authentication methods.
+                    Full Automated where account info will be stored for future authentication or Full Manual where you have to                             authenticate each 30 min.
   
 TDAPI.py:
-  Handle all API requests. GET, POST,PUT, PATCH.
+
+          Handle all API requests. GET, POST,PUT, PATCH.
   
           In order to send a valid request it keep authenticating throuh TDAtuthentication Class.
   
           Find below the table with all possible requests.
   
 TDAPI-Test.py:
-  Has multiple endpoints check for the TDAPI file.
+
+              Has multiple endpoints check for the TDAPI file.
   
               Added customed create orders.
   
 TDStream.py:
-  Handle all subscription for WebSocket streaming. SUBS, UNSUBS, ADD, LOGIN, LOGOUT, QOS.
+
+            Handle all subscription for WebSocket streaming. SUBS, UNSUBS, ADD, LOGIN, LOGOUT, QOS.
   
             In order to request the credentials it uses TDAPI Class.
   
             Find below subscription table.
  
 TDStreamer-test-py:
-  Has multiple subscription method to test TDStream.
+
+                   Has multiple subscription method to test TDStream.
 
 TDAPI requests table:
 
