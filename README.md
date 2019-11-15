@@ -11,7 +11,8 @@ TDAPI.py:
   Find below the table with all possible requests.
   
 TDAPI-Test.py:
-  Has multiple endpoints check for the TDAPI file
+  Has multiple endpoints check for the TDAPI file.
+  
   Added customed create orders
   
 TDStream.py:
