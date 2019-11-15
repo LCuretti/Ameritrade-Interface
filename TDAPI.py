@@ -944,10 +944,6 @@ class TDAPI():
             
             EXAMPLE:
                 
-                from td_ameritrade_api import OptionChain
-                
-                option_chain_1 = OptionChain(args)
-                
                 SessionObject.get_option_chain( option_chain = option_chain_1)
                 
                 OptionChain = {
@@ -1008,13 +1004,11 @@ class TDAPI():
             DESC: A list of watchlistitems object.
             TYPE: List<WatchListItems>
             
-                        WatchlistItem =[{"instrument":{"symbol": "BLUE","assetType": 'EQUITY'}},
+            EXAMPLES:
+               
+            WatchlistItem =[{"instrument":{"symbol": "BLUE","assetType": 'EQUITY'}},
                                         {"instrument":{"symbol": "AAPL","assetType": 'EQUITY'}}]
             
-            EXAMPLES:
-                
-            WatchlistItem1 = WatchListItem()
-            WatchListItem2 = WatchListItem()
             
             SessionObject.create_watchlist(account = 'MyAccountNumber', name = 'MyWatchListName', watchlistItems = WatchlistItem)
             
@@ -1173,11 +1167,6 @@ class TDAPI():
             TYPE: List<WatchListItems>
             
             EXAMPLES:
-                
-                        
-                
-            WatchlistItem1 = WatchListItem()
-            WatchlistItem2 = WatchListItem()
             
             Session.Object.update_watchlist(account = 'MyAccountNumber',
                                             watchlist_id = 'WatchListID',
@@ -1230,10 +1219,7 @@ class TDAPI():
             TYPE: List<WatchListItems>
             
             EXAMPLES:
-                
-            WatchListItem1 = WatchListItem()
-            WatchListItem2 = WatchListItem()
-            
+                          
             Session.Object.replace_watchlist(account = 'MyAccountNumber',
                                              watchlist_id = 'WatchListID',
                                              name_new = 'MyNewName',
@@ -1453,7 +1439,7 @@ class TDAPI():
             DESC: The order id.
             TYPE: String
             
-            EXA<PLES:
+            EXAMPLES:
                 
             Session.Object.cancel_order(account = 'MyAccountID', order_id_ 'MyOrderID')
             
