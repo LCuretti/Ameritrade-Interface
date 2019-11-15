@@ -25,7 +25,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 @author: LC
-Based on areed1192 / td-ameritrade-python-api
 """
 
 import json
@@ -1996,6 +1995,163 @@ class TDAPI():
         if response.status_code == 201:
             return "SavedOrder {} was successfully replaced.".format(savedorder_Id)
         else:
-            return response.content               
-    
-    
+            return response.content           
+        
+        '''#####################################################
+        ################# Custom Orders ########################
+        ####################################################'''
+        
+    def create_custom_order(self, account = None, order = None):
+        
+        '''
+            Create order for specific account. This method does not verify that the symbol or assets type are valid.
+            
+            Documentation Link: https://developer.tdameritrade.com/account-access/apis/post/accounts/%7BaccountId%7D/orders/%7BorderId%7D-0
+            
+            NAME: account
+            DESC: The account number you wish to create the watchlist for.
+            TYPE: String
+            
+            NAME: order
+            DESC: order payload externally prepared.
+            TYPE: json type order
+
+            EXAMPLE:
+                SessionObject.create_custom_order(account = 'MyaccountNumber', order = order_1)                
+        '''
+      
+        # define the endpoint
+        endpoint = '/accounts/{}/orders'.format(account)
+            
+        #build the url
+        url = self.api_endpoint(endpoint)
+        
+        #grab the original headers we have stored.
+        merged_headers = self.headers(mode = 'application/json')               
+        
+        #make the request
+        response = requests.post(url = url, headers = merged_headers, data = json.dumps(order), verify = True)
+        
+        if response.status_code == 201:
+            return "New costumed order was successfully created."
+        else:
+            return response.content    
+
+    def replace_custom_order(self, account = None, order_Id = None, order = None):
+        
+        '''
+            Create order for specific account. This method does not verify that the symbol or assets type are valid.
+            
+            Documentation Link: https://developer.tdameritrade.com/account-access/apis/post/accounts/%7BaccountId%7D/orders/%7BorderId%7D-0
+            
+            NAME: account
+            DESC: The account number you wish to create the watchlist for.
+            TYPE: String
+            
+            NAME: order_Id
+            DESC: Order to be replaced
+            TYPE: String
+            
+            NAME: order
+            DESC: order payload externally prepared.
+            TYPE: json type order
+
+            EXAMPLE:
+             
+                SessionObject.replace_custom_order(account = 'MyaccountNumber', order_Id = None, order = order_1)                
+        '''
+      
+        
+        # define the endpoint
+        endpoint = '/accounts/{}/orders/{}'.format(account,order_Id)
+            
+        #build the url
+        url = self.api_endpoint(endpoint)
+        
+        #grab the original headers we have stored.
+        merged_headers = self.headers(mode = 'application/json')               
+        
+        #make the request
+        response = requests.put(url = url, headers = merged_headers, data = json.dumps(order), verify = True)
+        
+        if response.status_code == 201:
+            return "Order {} was successfully replaced.".format(order_Id)
+        else:
+            return response.content   
+
+    def create_custom_savedorder(self, account = None, savedorder = None):
+        
+        '''
+            Create order for specific account. This method does not verify that the symbol or assets type are valid.
+            
+            Documentation Link: https://developer.tdameritrade.com/account-access/apis/post/accounts/%7BaccountId%7D/orders/%7BorderId%7D-0
+            
+            NAME: account
+            DESC: The account number you wish to create the watchlist for.
+            TYPE: String
+            
+            NAME: order
+            DESC: order payload externally prepared.
+            TYPE: json type order
+            
+            EXAMPLE:
+                SessionObject.create_custom_savedorder(account = 'MyaccountNumber', order = order_1)                
+        '''
+      
+        # define the endpoint
+        endpoint = '/accounts/{}/savedorders'.format(account)
+            
+        #build the url
+        url = self.api_endpoint(endpoint)
+        
+        #grab the original headers we have stored.
+        merged_headers = self.headers(mode = 'application/json')               
+        
+        #make the request
+        response = requests.post(url = url, headers = merged_headers, data = json.dumps(savedorder), verify = True)
+        
+        if response.status_code == 201:
+            return "New costumed savedorder was successfully created."
+        else:
+            return response.content    
+
+    def replace_custom_savedorder(self, account = None, savedorder_Id = None, order = None):
+        
+        '''
+            Create order for specific account. This method does not verify that the symbol or assets type are valid.
+            
+            Documentation Link: https://developer.tdameritrade.com/account-access/apis/post/accounts/%7BaccountId%7D/orders/%7BorderId%7D-0
+            
+            NAME: account
+            DESC: The account number you wish to create the watchlist for.
+            TYPE: String
+            
+            NAME: savedorder_Id
+            DESC: Order to be replaced
+            TYPE: String
+            
+            NAME: order
+            DESC: order payload externally prepared.
+            TYPE: json type order
+            
+            EXAMPLE:
+                SessionObject.replace_custom_savedorder(account = 'MyaccountNumber', order_Id = None, order = order_1)                
+        '''
+      
+        
+        # define the endpoint
+        endpoint = '/accounts/{}/savedorders/{}'.format(account,savedorder_Id)
+            
+        #build the url
+        url = self.api_endpoint(endpoint)
+        
+        #grab the original headers we have stored.
+        merged_headers = self.headers(mode = 'application/json')               
+        
+        #make the request
+        response = requests.put(url = url, headers = merged_headers, data = json.dumps(order), verify = True)
+        
+        if response.status_code == 201:
+            return "Savedorder {} was successfully replaced.".format(savedorder_Id)
+        else:
+            return response.content                           
