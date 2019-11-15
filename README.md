@@ -1,5 +1,5 @@
 # Ameritrade-Interface
-Ameritrade interface to handle Authentication, streaming subscriptions and API requests
+Ameritrade Python interface to handle Authentication, WebSocket streaming subscriptions and API requests
 
 TDAuthentication.py:
   Keeps a valid token access to be use by TDAPI(endpoint requests)
@@ -14,7 +14,7 @@ TDAPI-Test.py:
   Has multiple endpoints check for the TDAPI file
   
 TDStream.py:
-  Handle all subscription. SUBS, UNSUBS, ADD, LOGIN, LOGOUT, QOS
+  Handle all subscription for WebSocket streaming. SUBS, UNSUBS, ADD, LOGIN, LOGOUT, QOS
   In order to request the credentials it uses TDAPI Class
   Find below subscription table.
  
