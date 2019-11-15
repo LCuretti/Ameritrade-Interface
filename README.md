@@ -4,8 +4,11 @@ Handles Authentication, WebSocket streaming subscriptions and API requests
 TDAuthentication.py:
 
     Keeps a valid token access to be use by TDAPI(endpoint requests).
+    
     It can be run without any preview setup as it handle different authentication methods.
-    Full Automated where account info will be stored for future authentication or Full Manual where you have to                             authenticate each 30 min.
+    
+    Full Automated where account info will be stored for future authentication 
+    or Full Manual where you have to authenticate each 30 min.
   
 TDAPI.py:
 
