@@ -1563,7 +1563,17 @@ class TDStreamer():
             EXAMPLES:      
             SessionObject.data_request_chart_history_futures(keys = '/ES', frequecy = 'm5', period = 'd5')              
         '''
-                
+        
+        
+        if end_time != None and start_time != None:
+            
+            epoch = datetime.utcfromtimestamp(0)
+            eD = int((end_time - epoch).total_seconds()*1000)
+            sD = int((start_time - epoch).total_seconds()*1000)
+        
+        else:
+            eD = None
+            sD = None
         
         data_request= {
                         "requests": [
@@ -1577,8 +1587,8 @@ class TDStreamer():
                                                     "symbol": symbol,
                                                     "frequency": frequency,
                                                     "period": period,
-                                                    "END_TIME": end_time,
-                                                    "START_TIME": start_time,
+                                                    "END_TIME": eD,
+                                                    "START_TIME": sD,
 
                                                   }
                                     }
