@@ -59,7 +59,7 @@ class TDStreamer():
         8	CHART_EQUITY          	SUBS/ADD/UNSUBS      keys = symbols                                 	   0,1,2,..,8                 data
         9	CHART_FUTURES         	SUBS/ADD/UNSUBS      keys = future symbol as a product (ie. /ES)           0,1,2,..,6	              data
         10	CHART_OPTIONS          	SUBS/ADD/UNSUBS      keys = symbols (ie. SPY_111819C300)		   0,1,2,..,6                 data
-        11	QUOTE                	SUBS/ADD/UNSUBS      keys = symbols                                        0,1,2,…,52                 data
+        11	QUOTE                	SUBS/ADD/UNSUBS      keys = symbols                                        0,1,2,..,52                 data
         12	OPTION               	SUBS/ADD/UNSUBS      keys = symbols (ie. SPY_111819C300)                   0,1,2,..,41                data
         13	LISTED_BOOK          	SUBS/ADD/UNSUBS      keys = symbols	                                   0,1,2,3                    data
         14	NASDAQ_BOOK          	SUBS/ADD/UNSUBS      keys = symbols                                        0,1,2,3                    data
@@ -67,8 +67,8 @@ class TDStreamer():
         16	LEVELONE_FUTURES       	SUBS/ADD/UNSUBS      keys = future symbol as a product (ie. /ES)           0,1,2,..,35                data
         17	LEVELONE_FOREX       	SUBS/ADD/UNSUBS      keys = FOREX symbols (ie.. EUR/USD)                   0,1,2,..,28                data
         18	TIMESALE_EQUITY      	SUBS/ADD/UNSUBS      keys = symbols                                        0,1,2,3,4                  data
-        19	TIMESALE_FUTURES	SUBS/ADD/UNSUBS      keys = future symbol as a product (ie. /ES)         	   0,1,2,3,4                  data
-        20	TIMESALE_OPTIONS     	SUBS/ADD/UNSUBS      keys = symbols (ie. SPY_111819C300)	               0,1,2,3,4                  data
+        19	TIMESALE_FUTURES	SUBS/ADD/UNSUBS      keys = future symbol as a product (ie. /ES)           0,1,2,3,4                  data
+        20	TIMESALE_OPTIONS     	SUBS/ADD/UNSUBS      keys = symbols (ie. SPY_111819C300)	           0,1,2,3,4                  data
         21	NEWS_HEADLINE        	SUBS/ADD/UNSUBS      keys = symbols                                        0,1,2,..,10                data
         22	NEWS_HEADLINELIST    	GET                  keys = symbols                                        None                       snapshot
         23	NEWS_STORY           	GET                  story_id (ie. SN20191111010526)                       None                       snapshot
