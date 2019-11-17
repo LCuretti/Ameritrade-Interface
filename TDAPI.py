@@ -125,7 +125,7 @@ class TDAPI():
         '''
         
         '''
-            In the following to line we use the Authentication object to get a valid token.
+            In the following two line we use the Authentication object to get a valid token.
             You may have a different way to get a valid token for the request.
         '''
         
@@ -604,21 +604,29 @@ class TDAPI():
     #############  Market Hours ################
     #########################################'''
      
-    def get_markets_hours(self):
+    def get_markets_hours(self, markets = "all", date = dt.datetime.now()):
         
         '''
         Retrieve market hours for specified markets
         
-        Serves as the mechanism to make a request to the "Get Hours for multiple Markets"
+        Serves as the mechanism to make a request to the "Get Hours for multiple Markets for today or future date"
             
             Documentation Link: https://developer.tdameritrade.com/market-hours/apis
             
                  
             EXAMPLES:
                  
-            SessionObject.get_market_hours()
+            SessionObject.get_market_hours(markets = ['EQUITY', 'OPTION'], date = '2019-11-18')
         '''
-               
+         # build the params dictionary
+        if markets == 'all':
+            markets = ['EQUITY', 'OPTION', 'FUTURE', 'BOND','FOREX']
+        
+        markets = self.prepare_parameter_list(markets)
+        
+        data = {'markets': markets,
+                'date': date}       
+        
         # define the endpoint
         endpoint = '/marketdata/hours'
         
@@ -629,14 +637,14 @@ class TDAPI():
         merged_headers = self.headers()               
         
         # return the response of the get request.
-        return requests.get(url = url, headers=merged_headers, verify = True).json()
+        return requests.get(url = url, headers = merged_headers, params = data, verify = True).json()
  
     
-    def get_market_hours(self, market = None):
+    def get_market_hours(self, market = None, date = dt.datetime.now()):
         
         '''
             Serves as the mechanism to make a request to the 
-            "Get Hours for simple Markets" endpoint."
+            "Get Hours for simple Markets for today or future date" endpoint."
             
             Documentation Link: https://developer.tdameritrade.com/market-hours/apis
             
@@ -651,6 +659,9 @@ class TDAPI():
             SessionObject.get_market_hours(market = 'EQUITY')
         '''
         
+        data = {'date': date}       
+        
+        
         # define the endpoint
         endpoint = '/marketdata/{}/hours'.format(market)
         
@@ -661,7 +672,7 @@ class TDAPI():
         merged_headers = self.headers()
 
         # return the response of the get request.
-        return requests.get(url = url, headers=merged_headers, verify = True).json()
+        return requests.get(url = url, headers = merged_headers, params = data, verify = True).json()
 
     '''#####################################
     ############## Movers ##################

@@ -22,6 +22,11 @@ preferences = TDAPI.get_preferences(account = account_id)
 streamer_sub_keys = TDAPI.get_streamer_subscription_keys(accounts = [account_id])
 principals = TDAPI.get_user_principals(fields = ['preferences', 'streamerConnectionInfo'])
 
+
+userPrincipalsResponse = TDAPI.get_user_principals(fields = ['streamerSubscriptionKeys'])
+
+userPrincipalsResponse2 = TDAPI.get_user_principals(fields = ['streamerConnectionInfo'])
+
 Payload = {
            "expressTrading": False,
            "directOptionsRouting": False,
@@ -55,8 +60,8 @@ instruments2 = instrument_search_data = TDAPI.search_instruments('MSFT', 'fundam
 instruments3 = instrument_get_data = TDAPI.get_instruments(cusip = '594918104')
 
 #### Market Hours
-market_hours = TDAPI.get_market_hours(market = 'EQUITY')
-markets_hours = TDAPI.get_markets_hours()
+market_hours = TDAPI.get_market_hours(market = 'EQUITY', date = '2019-10-20')
+markets_hours = TDAPI.get_markets_hours(markets = 'all', date = '2019-11-20')
 
 ### Movers
 movers_data = TDAPI.get_movers(market = '$DJI', direction = 'up', change = 'value')
@@ -114,7 +119,7 @@ Option = TDAPI.get_option_chain(option_chain = OptionChain)
 
 #### Watchlist
 watchlist = TDAPI.get_watchlist_accounts(account = 'all')
-watchlistone = TDAPI.get_watchlist(account = account_id, watchlist_id = '48456994')
+watchlistone = TDAPI.get_watchlist(account = account_id, watchlist_id = '635544934')
 TDAPI.delete_watchlist(account = account_id, watchlist_id = '48456994')
             
 Watchlist3 =[{"instrument":{"symbol": "KO","assetType": 'EQUITY'}},
