@@ -80,7 +80,7 @@ class TDStreamer():
         28	FUTURES_OPTIONS_BOOK	SUBS            	Not managed
         29	TIMESALE_FOREX       	SUBS               	Not managed
         30	LEVELTWO_FUTURES       	SUBS             	Not managed			
-        31	STREAMER_SERVER	                            Not managed
+        31	STREAMER_SERVER	                                Not managed
 
     '''
   
