@@ -49,16 +49,16 @@ class TDStreamer():
         0	ADMIN	                LOGIN       	     credential, token, version			                                                  response
         1	                        LOGOUT	             None			                                                                      response
         2		                    QOS      	         "qoslevel": "0","1","2","3","4","5"       		                                      response
-        3	ACCT_ACTIVITY	        SUBS/UNSUBS     	streamkeys		                                           0,1,2,3                    data
-        4	ACTIVES_NASDAQ        	SUBS/ADD/UNSUBS    	"NASDAQ" - "60","300","600","1800","3600","ALL"    	       0,1                        data
-        5	ACTIVES_NYSE          	SUBS/ADD/UNSUBS    	"NYSE" - "60","300","600","1800","3600","ALL"      	       0,1                        data
-        6	ACTIVES_OTCBB         	SUBS/ADD/UNSUBS    	"OTCBB" - "60","300","600","1800","3600","ALL"     	       0,1                        data
-        7	ACTIVES_OPTIONS       	SUBS/ADD/UNSUBS    	"CALLS*","OPTS*","PUTS*","CALLS-DESC*", 	               0,1                        data
+        3	ACCT_ACTIVITY	        SUBS/UNSUBS     	streamkeys		                                   0,1,2,3                    data
+        4	ACTIVES_NASDAQ        	SUBS/ADD/UNSUBS    	"NASDAQ" - "60","300","600","1800","3600","ALL"    	   0,1                        data
+        5	ACTIVES_NYSE          	SUBS/ADD/UNSUBS    	"NYSE" - "60","300","600","1800","3600","ALL"      	   0,1                        data
+        6	ACTIVES_OTCBB         	SUBS/ADD/UNSUBS    	"OTCBB" - "60","300","600","1800","3600","ALL"     	   0,1                        data
+        7	ACTIVES_OPTIONS       	SUBS/ADD/UNSUBS    	"CALLS*","OPTS*","PUTS*","CALLS-DESC*", 	           0,1                        data
                                                         "OPTS-DESC*","PUTS-DESC*"(*options)
                                                         - "60","300","600","1800","3600","ALL"                               
-        8	CHART_EQUITY          	SUBS/ADD/UNSUBS    	keys = symbols                                 		       0,1,2,..,8                 data
+        8	CHART_EQUITY          	SUBS/ADD/UNSUBS    	keys = symbols                                 		   0,1,2,..,8                 data
         9	CHART_FUTURES         	SUBS/ADD/UNSUBS    	keys = future symbol as a product (ie. /ES)                0,1,2,..,6	              data
-        10	CHART_OPTIONS          	SUBS/ADD/UNSUBS  	keys = symbols (ie. SPY_111819C300)		                   0,1,2,..,6                 data
+        10	CHART_OPTIONS          	SUBS/ADD/UNSUBS  	keys = symbols (ie. SPY_111819C300)		           0,1,2,..,6                 data
         11	QUOTE                	SUBS/ADD/UNSUBS    	keys = symbols                                             0,1,2,…,52                 data
         12	OPTION               	SUBS/ADD/UNSUBS    	keys = symbols (ie. SPY_111819C300)                        0,1,2,..,41                data
         13	LISTED_BOOK          	SUBS/ADD/UNSUBS    	keys = symbols	                                           0,1,2,3                    data
