@@ -9,8 +9,6 @@ from Ameritrade_cfg import client_id, redirect_uri, account_id
 import datetime as dt
 from datetime import timedelta
 
-
-
 from TDStream import TDStreamer
 
 TDS = TDStreamer(client_id, redirect_uri, account_id)
