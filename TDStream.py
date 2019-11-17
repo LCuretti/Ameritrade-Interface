@@ -54,8 +54,8 @@ class TDStreamer():
         5	ACTIVES_NYSE          	SUBS/ADD/UNSUBS    	"NYSE" - "60","300","600","1800","3600","ALL"      	   0,1                        data
         6	ACTIVES_OTCBB         	SUBS/ADD/UNSUBS    	"OTCBB" - "60","300","600","1800","3600","ALL"     	   0,1                        data
         7	ACTIVES_OPTIONS       	SUBS/ADD/UNSUBS    	"CALLS*","OPTS*","PUTS*","CALLS-DESC*", 	           0,1                        data
-                                                        "OPTS-DESC*","PUTS-DESC*"(*options)
-                                                        - "60","300","600","1800","3600","ALL"                               
+                                                              "OPTS-DESC*","PUTS-DESC*"(*options)
+                                                              - "60","300","600","1800","3600","ALL"                               
         8	CHART_EQUITY          	SUBS/ADD/UNSUBS    	keys = symbols                                 		   0,1,2,..,8                 data
         9	CHART_FUTURES         	SUBS/ADD/UNSUBS    	keys = future symbol as a product (ie. /ES)                0,1,2,..,6	              data
         10	CHART_OPTIONS          	SUBS/ADD/UNSUBS  	keys = symbols (ie. SPY_111819C300)		           0,1,2,..,6                 data
@@ -73,7 +73,7 @@ class TDStreamer():
         22	NEWS_HEADLINELIST    	GET                	keys = symbols                                         	   None                       snapshot
         23	NEWS_STORY           	GET                	story_id (ie. SN20191111010526)                        	   None                       snapshot
         24	CHART_HISTORY_FUTURES	GET                	symbols, frequency: "m1","m5","m10","m30","h1","d1","w1","n1",
-                                                        perdiod: "d5","w4","n10","y1","y10", sT, eT		           None                       snapshot
+                                                              perdiod: "d5","w4","n10","y1","y10", sT, eT		           None                       snapshot
         25	FOREX_BOOK           	SUBS               	Service not available or temporary down.
         26	FUTURES_BOOK         	SUBS               	Service not available or temporary down.		
         27	LEVELONE_FUTURES_OPTIONS SUBS            	Service not available or temporary down.
