@@ -67,7 +67,7 @@ class TDStreamer():
         16	LEVELONE_FUTURES       	SUBS/ADD/UNSUBS      keys = future symbol as a product (ie. /ES)                0,1,2,..,35                data
         17	LEVELONE_FOREX       	SUBS/ADD/UNSUBS      keys = FOREX symbols (ie.. EUR/USD)                        0,1,2,..,28                data
         18	TIMESALE_EQUITY      	SUBS/ADD/UNSUBS      keys = symbols                                         	   0,1,2,3,4                  data
-        19	TIMESALE_FUTURES	SUBS/ADD/UNSUBS    keys = future symbol as a product (ie. /ES)         	   0,1,2,3,4                  data
+        19	TIMESALE_FUTURES	SUBS/ADD/UNSUBS      keys = future symbol as a product (ie. /ES)         	   0,1,2,3,4                  data
         20	TIMESALE_OPTIONS     	SUBS/ADD/UNSUBS      keys = symbols (ie. SPY_111819C300)	                   0,1,2,3,4                  data
         21	NEWS_HEADLINE        	SUBS/ADD/UNSUBS      keys = symbols                                             0,1,2,..,10                data
         22	NEWS_HEADLINELIST    	GET                  keys = symbols                                         	   None                       snapshot
