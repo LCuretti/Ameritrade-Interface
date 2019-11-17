@@ -185,7 +185,7 @@ class TDStreamer():
         print("### closed ###")
 
     def on_message(self, message):
-        #handle the meesages receives
+        #handle the messages it receives
         
         message = json.loads(message,strict=False)
         print(message)  
