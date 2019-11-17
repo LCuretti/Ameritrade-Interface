@@ -102,6 +102,10 @@ class TDAPI():
         self.redirect_uri = redirect_uri
         self.account_id = account_id
         
+        '''
+            The following 2 lines create authentication object and run it.
+            It will be use in the headers method to send a valid token.
+        '''
         
         self.Auth = TDAuthentication(self.client_id, self.redirect_uri, self.account_id)
         self.Auth.authenticate()
@@ -112,7 +116,6 @@ class TDAPI():
         '''
 
         # define the string representation
-        
         return '{}'.format(self.Auth)
     
     def headers(self, mode = None):
@@ -120,12 +123,18 @@ class TDAPI():
             Returns a dictionary of default HTTP headers for calls to TD Ameritrade API,
             in the headers we defined the Authorization and access toke.
         '''
-        # first male sure the token is still valid
+        
+        '''
+            In the following to line we use the Authentication object to get a valid token.
+            You may have a different way to get a valid token for the request.
+        '''
+        
+        # first make sure the token is still valid
         self.Auth.authenticate()
                 
         # grab the access token
         token = self.Auth.access_token
-        
+               
         # create the headers dictionary
         headers ={'Authorization':f'Bearer {token}'}
 

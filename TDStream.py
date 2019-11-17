@@ -29,13 +29,13 @@ THE SOFTWARE.
 
 import urllib
 import json
-import dateutil.parser
+#import dateutil.parser
 from datetime import datetime
-import time
+#import time
 
 import pyodbc
 import websocket
-from threading import Thread, Timer
+from threading import Thread
 
 from TDAPI import TDAPI
 
@@ -91,13 +91,19 @@ class TDStreamer():
             
         self.cnxn = None
         self.crsr = None
-        self.TDAPI = TDAPI(client_id, redirect_uri, account_id)
         self.LoggedIn = False
   
         self.notify = []
         self.response = []
         self.data_diff = []
+        
+        '''
+            The following part create an object TDAPI in order to get the: "streamerSubscriptionKeys" for ACCT_ACTIVITY method (Account activity subscription),
+                                                                           "streamerConnectionInfo" to get the connection URL, and credential for LogIn.
+            You may use other than TDAPI api to get those values.
+        '''
 
+        self.TDAPI = TDAPI(client_id, redirect_uri, account_id)
         userPrincipalsResponse = self.TDAPI.get_user_principals(fields = ['streamerSubscriptionKeys', 'streamerConnectionInfo'])
 
         # we need to get the timestamp in order to make our next request, but it needs to be parsed
@@ -1540,11 +1546,11 @@ class TDStreamer():
             TYPE: String
             
             NAME: start_Time
-            DESC: Start time of chart in milliseconds since Epoch (optional)
+            DESC: Start time
             TYPE: String
             
             NAME: end_Time
-            DESC: End time of chart in milliseconds since Epoch (optional)
+            DESC: End time
             TYPE: String
                       
             MAME: fields
