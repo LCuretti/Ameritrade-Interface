@@ -48,7 +48,7 @@ class TDStreamer():
         id	service              	command        	     parameters	                                       	       fields	                  Response Type
         0	ADMIN	                LOGIN       	     credential, token, version			                                                  response
         1	                        LOGOUT	             None			                                                                      response
-        2		                    QOS      	         "qoslevel": "0","1","2","3","4","5"       		                                      response
+        2		                QOS      	     "qoslevel": "0","1","2","3","4","5"       		                                      response
         3	ACCT_ACTIVITY	        SUBS/UNSUBS     	streamkeys		                                   0,1,2,3                    data
         4	ACTIVES_NASDAQ        	SUBS/ADD/UNSUBS    	"NASDAQ" - "60","300","600","1800","3600","ALL"    	   0,1                        data
         5	ACTIVES_NYSE          	SUBS/ADD/UNSUBS    	"NYSE" - "60","300","600","1800","3600","ALL"      	   0,1                        data
@@ -67,7 +67,7 @@ class TDStreamer():
         16	LEVELONE_FUTURES       	SUBS/ADD/UNSUBS  	keys = future symbol as a product (ie. /ES)                0,1,2,..,35                data
         17	LEVELONE_FOREX       	SUBS/ADD/UNSUBS    	keys = FOREX symbols (ie.. EUR/USD)                        0,1,2,..,28                data
         18	TIMESALE_EQUITY      	SUBS/ADD/UNSUBS    	keys = symbols                                         	   0,1,2,3,4                  data
-        19	TIMESALE_FUTURES	    SUBS/ADD/UNSUBS    	keys = future symbol as a product (ie. /ES)         	   0,1,2,3,4                  data
+        19	TIMESALE_FUTURES	SUBS/ADD/UNSUBS    	keys = future symbol as a product (ie. /ES)         	   0,1,2,3,4                  data
         20	TIMESALE_OPTIONS     	SUBS/ADD/UNSUBS    	keys = symbols (ie. SPY_111819C300)	                   0,1,2,3,4                  data
         21	NEWS_HEADLINE        	SUBS/ADD/UNSUBS    	keys = symbols                                             0,1,2,..,10                data
         22	NEWS_HEADLINELIST    	GET                	keys = symbols                                         	   None                       snapshot
