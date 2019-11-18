@@ -27,6 +27,25 @@ userPrincipalsResponse = TDAPI.get_user_principals(fields = ['streamerSubscripti
 
 userPrincipalsResponse2 = TDAPI.get_user_principals(fields = ['streamerConnectionInfo'])
 
+
+Payload = {   
+           "expressTrading": false,
+           "directOptionsRouting": false,
+           "directEquityRouting": false,
+           "defaultEquityOrderLegInstruction": "'BUY' or 'SELL' or 'BUY_TO_COVER' or 'SELL_SHORT' or 'NONE'",
+           "defaultEquityOrderType": "'MARKET' or 'LIMIT' or 'STOP' or 'STOP_LIMIT' or 'TRAILING_STOP' or 'MARKET_ON_CLOSE' or 'NONE'",
+           "defaultEquityOrderPriceLinkType": "'VALUE' or 'PERCENT' or 'NONE'",
+           "defaultEquityOrderDuration": "'DAY' or 'GOOD_TILL_CANCEL' or 'NONE'",
+           "defaultEquityOrderMarketSession": "'AM' or 'PM' or 'NORMAL' or 'SEAMLESS' or 'NONE'",
+           "defaultEquityQuantity": 0,
+           "mutualFundTaxLotMethod": "'FIFO' or 'LIFO' or 'HIGH_COST' or 'LOW_COST' or 'MINIMUM_TAX' or 'AVERAGE_COST' or 'NONE'",
+           "optionTaxLotMethod": "'FIFO' or 'LIFO' or 'HIGH_COST' or 'LOW_COST' or 'MINIMUM_TAX' or 'AVERAGE_COST' or 'NONE'",
+           "equityTaxLotMethod": "'FIFO' or 'LIFO' or 'HIGH_COST' or 'LOW_COST' or 'MINIMUM_TAX' or 'AVERAGE_COST' or 'NONE'",
+           "defaultAdvancedToolLaunch": "'TA' or 'N' or 'Y' or 'TOS' or 'NONE' or 'CC2'",
+           "authTokenTimeout": "'FIFTY_FIVE_MINUTES' or 'TWO_HOURS' or 'FOUR_HOURS' or 'EIGHT_HOURS'"
+           }
+
+
 Payload = {
            "expressTrading": False,
            "directOptionsRouting": False,
@@ -121,6 +140,25 @@ Option = TDAPI.get_option_chain(option_chain = OptionChain)
 watchlist = TDAPI.get_watchlist_accounts(account = 'all')
 watchlistone = TDAPI.get_watchlist(account = account_id, watchlist_id = '635544934')
 TDAPI.delete_watchlist(account = account_id, watchlist_id = '48456994')
+
+
+FullWatchListItem = {
+                                    "name": "string",
+                                    "watchlistItems": [
+                                                        {
+                                                        "quantity": 0,
+                                                        "averagePrice": 0,
+                                                        "commission": 0,
+                                                        "purchasedDate": "DateParam\"",
+                                                        "instrument": {
+                                                                        "symbol": "string",
+                                                                        "assetType": "'EQUITY' or 'OPTION' or 'MUTUAL_FUND' or 'FIXED_INCOME' or 'INDEX'"
+                                                                      }
+                                                         }
+                                                      ]
+                                     }
+
+'''Not sure why anyone would chosse "quantity, "averagePrice", "commission" or purchaseDate'''
             
 Watchlist3 =[{"instrument":{"symbol": "KO","assetType": 'EQUITY'}},
              {"instrument":{"symbol": "GOOG","assetType": 'EQUITY'}}]
@@ -170,48 +208,48 @@ BaseOrder = {'orderType':'LIMIT',
 ''' Below is the complete order detail and their option. It can be use to create order custom or replace order custom '''
 
 FullOrder = {
-            "session": "'NORMAL' or 'AM' or 'PM' or 'SEAMLESS'",
-            "duration": "'DAY' or 'GOOD_TILL_CANCEL' or 'FILL_OR_KILL'",
-            "orderType": "'MARKET' or 'LIMIT' or 'STOP' or 'STOP_LIMIT' or 'TRAILING_STOP' or 'MARKET_ON_CLOSE' or 'EXERCISE' or 'TRAILING_STOP_LIMIT' or 'NET_DEBIT' or 'NET_CREDIT' or 'NET_ZERO'",
+            "session": "'NORMAL','AM','PM','SEAMLESS'",
+            "duration": "'DAY','GOOD_TILL_CANCEL','FILL_OR_KILL'",
+            "orderType": "'MARKET','LIMIT','STOP','STOP_LIMIT','TRAILING_STOP','MARKET_ON_CLOSE','EXERCISE','TRAILING_STOP_LIMIT','NET_DEBIT','NET_CREDIT','NET_ZERO'",
             "cancelTime": {
                 "date": "string",
                 "shortFormat": False
             },
-            "complexOrderStrategyType": "'NONE' or 'COVERED' or 'VERTICAL' or 'BACK_RATIO' or 'CALENDAR' or 'DIAGONAL' or 'STRADDLE' or 'STRANGLE' or 'COLLAR_SYNTHETIC' or 'BUTTERFLY' or 'CONDOR' or 'IRON_CONDOR' or 'VERTICAL_ROLL' or 'COLLAR_WITH_STOCK' or 'DOUBLE_DIAGONAL' or 'UNBALANCED_BUTTERFLY' or 'UNBALANCED_CONDOR' or 'UNBALANCED_IRON_CONDOR' or 'UNBALANCED_VERTICAL_ROLL' or 'CUSTOM'",
+            "complexOrderStrategyType": "'NONE','COVERED','VERTICAL','BACK_RATIO','CALENDAR','DIAGONAL','STRADDLE','STRANGLE','COLLAR_SYNTHETIC','BUTTERFLY','CONDOR','IRON_CONDOR','VERTICAL_ROLL','COLLAR_WITH_STOCK','DOUBLE_DIAGONAL','UNBALANCED_BUTTERFLY','UNBALANCED_CONDOR','UNBALANCED_IRON_CONDOR','UNBALANCED_VERTICAL_ROLL','CUSTOM'",
             "quantity": 0,
             "filledQuantity": 0,
             "remainingQuantity": 0,
-            "requestedDestination": "'INET' or 'ECN_ARCA' or 'CBOE' or 'AMEX' or 'PHLX' or 'ISE' or 'BOX' or 'NYSE' or 'NASDAQ' or 'BATS' or 'C2' or 'AUTO'",
+            "requestedDestination": "'INET','ECN_ARCA','CBOE','AMEX','PHLX','ISE','BOX','NYSE','NASDAQ','BATS','C2','AUTO'",
             "destinationLinkName": "string",
             "releaseTime": "string",
             "stopPrice": 0,
-            "stopPriceLinkBasis": "'MANUAL' or 'BASE' or 'TRIGGER' or 'LAST' or 'BID' or 'ASK' or 'ASK_BID' or 'MARK' or 'AVERAGE'",
-            "stopPriceLinkType": "'VALUE' or 'PERCENT' or 'TICK'",
+            "stopPriceLinkBasis": "'MANUAL','BASE','TRIGGER','LAST','BID','ASK','ASK_BID','MARK','AVERAGE'",
+            "stopPriceLinkType": "'VALUE','PERCENT','TICK'",
             "stopPriceOffset": 0,
-            "stopType": "'STANDARD' or 'BID' or 'ASK' or 'LAST' or 'MARK'",
-            "priceLinkBasis": "'MANUAL' or 'BASE' or 'TRIGGER' or 'LAST' or 'BID' or 'ASK' or 'ASK_BID' or 'MARK' or 'AVERAGE'",
-            "priceLinkType": "'VALUE' or 'PERCENT' or 'TICK'",
+            "stopType": "'STANDARD','BID','ASK','LAST','MARK'",
+            "priceLinkBasis": "'MANUAL','BASE','TRIGGER','LAST','BID','ASK','ASK_BID','MARK','AVERAGE'",
+            "priceLinkType": "'VALUE','PERCENT','TICK'",
             "price": 0,
-            "taxLotMethod": "'FIFO' or 'LIFO' or 'HIGH_COST' or 'LOW_COST' or 'AVERAGE_COST' or 'SPECIFIC_LOT'",
+            "taxLotMethod": "'FIFO','LIFO','HIGH_COST','LOW_COST','AVERAGE_COST','SPECIFIC_LOT'",
             "orderLegCollection": [
                 {
-                    "orderLegType": "'EQUITY' or 'OPTION' or 'INDEX' or 'MUTUAL_FUND' or 'CASH_EQUIVALENT' or 'FIXED_INCOME' or 'CURRENCY'",
+                    "orderLegType": "'EQUITY','OPTION','INDEX','MUTUAL_FUND','CASH_EQUIVALENT','FIXED_INCOME','CURRENCY'",
                     "legId": 0,
                     "instrument": { #"The type <Instrument> has the following subclasses [Option, MutualFund, CashEquivalent, Equity, FixedIncome] descriptions are listed below\""
                                   },
-                    "instruction": "'BUY' or 'SELL' or 'BUY_TO_COVER' or 'SELL_SHORT' or 'BUY_TO_OPEN' or 'BUY_TO_CLOSE' or 'SELL_TO_OPEN' or 'SELL_TO_CLOSE' or 'EXCHANGE'",
-                    "positionEffect": "'OPENING' or 'CLOSING' or 'AUTOMATIC'",
+                    "instruction": "'BUY','SELL','BUY_TO_COVER','SELL_SHORT','BUY_TO_OPEN','BUY_TO_CLOSE','SELL_TO_OPEN','SELL_TO_CLOSE','EXCHANGE'",
+                    "positionEffect": "'OPENING','CLOSING','AUTOMATIC'",
                     "quantity": 0,
-                    "quantityType": "'ALL_SHARES' or 'DOLLARS' or 'SHARES'"
+                    "quantityType": "'ALL_SHARES','DOLLARS','SHARES'"
                 }
             ],
             "activationPrice": 0,
-            "specialInstruction": "'ALL_OR_NONE' or 'DO_NOT_REDUCE' or 'ALL_OR_NONE_DO_NOT_REDUCE'",
-            "orderStrategyType": "'SINGLE' or 'OCO' or 'TRIGGER'",
+            "specialInstruction": "'ALL_OR_NONE','DO_NOT_REDUCE','ALL_OR_NONE_DO_NOT_REDUCE'",
+            "orderStrategyType": "'SINGLE','OCO','TRIGGER'",
             "orderId": 0,
             "cancelable": False,
             "editable": False,
-            "status": "'AWAITING_PARENT_ORDER' or 'AWAITING_CONDITION' or 'AWAITING_MANUAL_REVIEW' or 'ACCEPTED' or 'AWAITING_UR_OUT' or 'PENDING_ACTIVATION' or 'QUEUED' or 'WORKING' or 'REJECTED' or 'PENDING_CANCEL' or 'CANCELED' or 'PENDING_REPLACE' or 'REPLACED' or 'FILLED' or 'EXPIRED'",
+            "status": "'AWAITING_PARENT_ORDER','AWAITING_CONDITION','AWAITING_MANUAL_REVIEW','ACCEPTED','AWAITING_UR_OUT','PENDING_ACTIVATION','QUEUED','WORKING','REJECTED','PENDING_CANCEL','CANCELED','PENDING_REPLACE','REPLACED','FILLED','EXPIRED'",
             "enteredTime": "string",
             "closeTime": "string",
             "tag": "string",
@@ -231,20 +269,20 @@ FullOrder = {
 ##JSON for each are listed below: 
 instrument = {
                 Option = {
-                          "assetType": "'EQUITY' or 'OPTION' or 'INDEX' or 'MUTUAL_FUND' or 'CASH_EQUIVALENT' or 'FIXED_INCOME' or 'CURRENCY'",
+                          "assetType": "'EQUITY','OPTION','INDEX','MUTUAL_FUND','CASH_EQUIVALENT','FIXED_INCOME','CURRENCY'",
                           "cusip": "string",
                           "symbol": "string",
                           "description": "string",
-                          "type": "'VANILLA' or 'BINARY' or 'BARRIER'",
-                          "putCall": "'PUT' or 'CALL'",
+                          "type": "'VANILLA','BINARY','BARRIER'",
+                          "putCall": "'PUT','CALL'",
                           "underlyingSymbol": "string",
                           "optionMultiplier": 0,
                           "optionDeliverables": [
                                                     {
                                                   "symbol": "string",
                                                   "deliverableUnits": 0,
-                                                  "currencyType": "'USD' or 'CAD' or 'EUR' or 'JPY'",
-                                                  "assetType": "'EQUITY' or 'OPTION' or 'INDEX' or 'MUTUAL_FUND' or 'CASH_EQUIVALENT' or 'FIXED_INCOME' or 'CURRENCY'"
+                                                  "currencyType": "'USD','CAD','EUR','JPY'",
+                                                  "assetType": "'EQUITY','OPTION','INDEX','MUTUAL_FUND','CASH_EQUIVALENT','FIXED_INCOME','CURRENCY'"
                                                     }
                                                 ]
                           }
@@ -252,27 +290,27 @@ instrument = {
                 
                 
                 MutualFund = {
-                              "assetType": "'EQUITY' or 'OPTION' or 'INDEX' or 'MUTUAL_FUND' or 'CASH_EQUIVALENT' or 'FIXED_INCOME' or 'CURRENCY'",
+                              "assetType": "'EQUITY','OPTION','INDEX','MUTUAL_FUND','CASH_EQUIVALENT','FIXED_INCOME','CURRENCY'",
                               "cusip": "string",
                               "symbol": "string",
                               "description": "string",
-                              "type": "'NOT_APPLICABLE' or 'OPEN_END_NON_TAXABLE' or 'OPEN_END_TAXABLE' or 'NO_LOAD_NON_TAXABLE' or 'NO_LOAD_TAXABLE'"
+                              "type": "'NOT_APPLICABLE','OPEN_END_NON_TAXABLE','OPEN_END_TAXABLE','NO_LOAD_NON_TAXABLE','NO_LOAD_TAXABLE'"
                              }
                 
                 
                 
                 CashEquivalent = {
-                                  "assetType": "'EQUITY' or 'OPTION' or 'INDEX' or 'MUTUAL_FUND' or 'CASH_EQUIVALENT' or 'FIXED_INCOME' or 'CURRENCY'",
+                                  "assetType": "'EQUITY','OPTION','INDEX','MUTUAL_FUND','CASH_EQUIVALENT','FIXED_INCOME','CURRENCY'",
                                   "cusip": "string",
                                   "symbol": "string",
                                   "description": "string",
-                                  "type": "'SAVINGS' or 'MONEY_MARKET_FUND'"
+                                  "type": "'SAVINGS','MONEY_MARKET_FUND'"
                                  }
                 
                 
                 
                 Equity = {
-                          "assetType": "'EQUITY' or 'OPTION' or 'INDEX' or 'MUTUAL_FUND' or 'CASH_EQUIVALENT' or 'FIXED_INCOME' or 'CURRENCY'",
+                          "assetType": "'EQUITY','OPTION','INDEX','MUTUAL_FUND','CASH_EQUIVALENT','FIXED_INCOME','CURRENCY'",
                           "cusip": "string",
                           "symbol": "string",
                           "description": "string"
@@ -281,7 +319,7 @@ instrument = {
                 
                 
                 FixedIncome = {
-                                  "assetType": "'EQUITY' or 'OPTION' or 'INDEX' or 'MUTUAL_FUND' or 'CASH_EQUIVALENT' or 'FIXED_INCOME' or 'CURRENCY'",
+                                  "assetType": "'EQUITY','OPTION','INDEX','MUTUAL_FUND','CASH_EQUIVALENT','FIXED_INCOME','CURRENCY'",
                                   "cusip": "string",
                                   "symbol": "string",
                                   "description": "string",
@@ -295,7 +333,7 @@ instrument = {
 ##JSON for each are listed below: 
 orderActivityCollection = {
                             Execution = {
-                                          "activityType": "'EXECUTION' or 'ORDER_ACTION'",
+                                          "activityType": "'EXECUTION','ORDER_ACTION'",
                                           "executionType": "'FILL'",
                                           "quantity": 0,
                                           "orderRemainingQuantity": 0,

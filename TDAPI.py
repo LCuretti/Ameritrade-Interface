@@ -344,7 +344,7 @@ class TDAPI():
             
             EXAMPLES:
                 
-            SessionObject.update_preferences(account = 'MyAccountNumber', dataPayload = <Dictionary>)
+            SessionObject.update_preferences(account = 'MyAccountNumber', dataPayload = Payload)
             
         '''
                
@@ -959,19 +959,17 @@ class TDAPI():
             Documentation Link: https://developer.tdameritrade.com/option-chains/apis/get/marketdata/chains
             
             NAME: option_chain
-            DESAC: Represents a single OptionChainObject.
+            DESC: Represents a single OptionChainObject.
             Type: TDAmeritrade.OptionChainObject
             
             EXAMPLE:
                 
-                SessionObject.get_option_chain( option_chain = option_chain_1)
-                
-                OptionChain = {
+                OptionChain_1 = {
                                 "symbol": "",
                                 "contractType": ['CALL', 'PUT', 'ALL'],
                                 "strikeCount": '', 
                                 "includeQuotes":['TRUE','FALSE'],
-                                "strategy": ['SINGLE', 'ANALYTICAL', 'COVERED', 'VERTICAL', 'CALENDAR', 'STRANGLE', 'STRADDLE', 'BUTTERFLY'],
+                                "strategy": ['SINGLE', 'ANALYTICAL', 'COVERED', 'VERTICAL', 'CALENDAR', 'STRANGLE', 'STRADDLE', 'BUTTERFLY', 'CONDOR', 'DIAGONAL', 'COLLAR', 'ROLL'],
                                 "interval": '',
                                 "strike": "",
                                 "range": ['ITM', 'NTM', 'OTM', 'SAK','SBK','SNK','ALL'],
@@ -984,7 +982,8 @@ class TDAPI():
                                 "expMonth":['ALL','JAN','FEB','MAR', 'APR','MAY','JUN', 'JUL','AUG','SEP', 'OCT', 'NOV', 'DEC'],
                                 "optionType": ['S', 'NS', 'ALL']
                               }
-                
+         
+                SessionObject.get_option_chain( option_chain = option_chain_1)
         '''
         # take JSON representation of the string
         data = option_chain
@@ -1023,11 +1022,30 @@ class TDAPI():
             NAME: watchlistItems
             DESC: A list of watchlistitems object.
             TYPE: List<WatchListItems>
+                
+                Full WatchListItem = {
+                                    "name": "string",
+                                    "watchlistItems": [
+                                                        {
+                                                        "quantity": 0,
+                                                        "averagePrice": 0,
+                                                        "commission": 0,
+                                                        "purchasedDate": "DateParam\"",
+                                                        "instrument": {
+                                                                        "symbol": "string",
+                                                                        "assetType": "'EQUITY' or 'OPTION' or 'MUTUAL_FUND' or 'FIXED_INCOME' or 'INDEX'"
+                                                                      }
+                                                         }
+                                                      ]
+                                     }
             
             EXAMPLES:
                
-            WatchlistItem =[{"instrument":{"symbol": "BLUE","assetType": 'EQUITY'}},
-                                        {"instrument":{"symbol": "AAPL","assetType": 'EQUITY'}}]
+            WatchlistItem =[{"instrument":{"symbol": "BLUE",
+                                           "assetType": 'EQUITY'},
+                            {"instrument":{"symbol": "AAPL",
+                                           "assetType": 'EQUITY'}
+                            }]
             
             
             SessionObject.create_watchlist(account = 'MyAccountNumber', name = 'MyWatchListName', watchlistItems = WatchlistItem)
