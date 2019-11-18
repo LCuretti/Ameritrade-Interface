@@ -25,6 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 @author: LC
+Based on areed1192 / td-ameritrade-python-api
 """
 
 import json
