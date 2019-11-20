@@ -45,42 +45,42 @@ class TDStreamer():
         
         Performs subscription request to the TD Ameritrade.
  
-        id	service              	command        	     parameters	                                       	   fields	                  Response Type
+        id	service              	command        	     parameters	                                       	       fields	                  Response Type
         0	ADMIN	                LOGIN       	     credential, token, version			                                                  response
         1	                        LOGOUT	             None			                                                                      response
-        2		                QOS      	     "qoslevel": "0","1","2","3","4","5"       		                                      response
-        3	ACCT_ACTIVITY	        SUBS/UNSUBS          streamkeys		                                   0,1,2,3                    data
-        4	ACTIVES_NASDAQ        	SUBS/ADD/UNSUBS      "NASDAQ" - "60","300","600","1800","3600","ALL"       0,1                        data
-        5	ACTIVES_NYSE          	SUBS/ADD/UNSUBS      "NYSE" - "60","300","600","1800","3600","ALL"         0,1                        data
-        6	ACTIVES_OTCBB         	SUBS/ADD/UNSUBS      "OTCBB" - "60","300","600","1800","3600","ALL"        0,1                        data
-        7	ACTIVES_OPTIONS       	SUBS/ADD/UNSUBS      "CALLS*","OPTS*","PUTS*","CALLS-DESC*", 	           0,1                        data
-                                                             "OPTS-DESC*","PUTS-DESC*"(*options)
-                                                             - "60","300","600","1800","3600","ALL"                               
-        8	CHART_EQUITY          	SUBS/ADD/UNSUBS      keys = symbols                                 	   0,1,2,..,8                 data
-        9	CHART_FUTURES         	SUBS/ADD/UNSUBS      keys = future symbol as a product (ie. /ES)           0,1,2,..,6	              data
-        10	CHART_OPTIONS          	SUBS/ADD/UNSUBS      keys = symbols (ie. SPY_111819C300)		   0,1,2,..,6                 data
-        11	QUOTE                	SUBS/ADD/UNSUBS      keys = symbols                                        0,1,2,..,52                 data
-        12	OPTION               	SUBS/ADD/UNSUBS      keys = symbols (ie. SPY_111819C300)                   0,1,2,..,41                data
-        13	LISTED_BOOK          	SUBS/ADD/UNSUBS      keys = symbols	                                   0,1,2,3                    data
-        14	NASDAQ_BOOK          	SUBS/ADD/UNSUBS      keys = symbols                                        0,1,2,3                    data
-        15	OPTIONS_BOOK         	SUBS/ADD/UNSUBS      keys = symbols (ie. SPY_111819C300)	           0,1,2,3                    data
-        16	LEVELONE_FUTURES       	SUBS/ADD/UNSUBS      keys = future symbol as a product (ie. /ES)           0,1,2,..,35                data
-        17	LEVELONE_FOREX       	SUBS/ADD/UNSUBS      keys = FOREX symbols (ie.. EUR/USD)                   0,1,2,..,28                data
-        18	TIMESALE_EQUITY      	SUBS/ADD/UNSUBS      keys = symbols                                        0,1,2,3,4                  data
-        19	TIMESALE_FUTURES	SUBS/ADD/UNSUBS      keys = future symbol as a product (ie. /ES)           0,1,2,3,4                  data
-        20	TIMESALE_OPTIONS     	SUBS/ADD/UNSUBS      keys = symbols (ie. SPY_111819C300)	           0,1,2,3,4                  data
-        21	NEWS_HEADLINE        	SUBS/ADD/UNSUBS      keys = symbols                                        0,1,2,..,10                data
-        22	NEWS_HEADLINELIST    	GET                  keys = symbols                                        None                       snapshot
-        23	NEWS_STORY           	GET                  story_id (ie. SN20191111010526)                       None                       snapshot
-        24	CHART_HISTORY_FUTURES	GET                  symbols, frequency: "m1","m5","m10","m30","h1","d1","w1","n1",
-                                                             perdiod: "d5","w4","n10","y1","y10", sT, eT	   None                       snapshot
-        25	FOREX_BOOK           	SUBS                 Service not available or temporary down.
-        26	FUTURES_BOOK         	SUBS                 Service not available or temporary down.		
-        27	LEVELONE_FUTURES_OPTIONS SUBS                Service not available or temporary down.
-        28	FUTURES_OPTIONS_BOOK	SUBS                 Not managed
-        29	TIMESALE_FOREX       	SUBS                 Not managed
-        30	LEVELTWO_FUTURES       	SUBS                 Not managed			
-        31	STREAMER_SERVER	                             Not managed
+        2		                    QOS      	         "qoslevel": "0","1","2","3","4","5"       		                                      response
+        3	ACCT_ACTIVITY	        SUBS/UNSUBS     	streamkeys		                                           0,1,2,3                    data
+        4	ACTIVES_NASDAQ        	SUBS/ADD/UNSUBS    	"NASDAQ" - "60","300","600","1800","3600","ALL"    	       0,1                        data
+        5	ACTIVES_NYSE          	SUBS/ADD/UNSUBS    	"NYSE" - "60","300","600","1800","3600","ALL"      	       0,1                        data
+        6	ACTIVES_OTCBB         	SUBS/ADD/UNSUBS    	"OTCBB" - "60","300","600","1800","3600","ALL"     	       0,1                        data
+        7	ACTIVES_OPTIONS       	SUBS/ADD/UNSUBS    	"CALLS*","OPTS*","PUTS*","CALLS-DESC*", 	               0,1                        data
+                                                        "OPTS-DESC*","PUTS-DESC*"(*options)
+                                                        - "60","300","600","1800","3600","ALL"                               
+        8	CHART_EQUITY          	SUBS/ADD/UNSUBS    	keys = symbols                                 		       0,1,2,..,8                 data
+        9	CHART_FUTURES         	SUBS/ADD/UNSUBS    	keys = future symbol as a product (ie. /ES)                0,1,2,..,6	              data
+        10	CHART_OPTIONS          	SUBS/ADD/UNSUBS  	keys = symbols (ie. SPY_111819C300)		                   0,1,2,..,6                 data
+        11	QUOTE                	SUBS/ADD/UNSUBS    	keys = symbols                                             0,1,2,…,52                 data
+        12	OPTION               	SUBS/ADD/UNSUBS    	keys = symbols (ie. SPY_111819C300)                        0,1,2,..,41                data
+        13	LISTED_BOOK          	SUBS/ADD/UNSUBS    	keys = symbols	                                           0,1,2,3                    data
+        14	NASDAQ_BOOK          	SUBS/ADD/UNSUBS    	keys = symbols                                             0,1,2,3                    data
+        15	OPTIONS_BOOK         	SUBS/ADD/UNSUBS    	keys = symbols (ie. SPY_111819C300)	                       0,1,2,3                    data
+        16	LEVELONE_FUTURES       	SUBS/ADD/UNSUBS  	keys = future symbol as a product (ie. /ES)                0,1,2,..,35                data
+        17	LEVELONE_FOREX       	SUBS/ADD/UNSUBS    	keys = FOREX symbols (ie.. EUR/USD)                        0,1,2,..,28                data
+        18	TIMESALE_EQUITY      	SUBS/ADD/UNSUBS    	keys = symbols                                         	   0,1,2,3,4                  data
+        19	TIMESALE_FUTURES	    SUBS/ADD/UNSUBS    	keys = future symbol as a product (ie. /ES)         	   0,1,2,3,4                  data
+        20	TIMESALE_OPTIONS     	SUBS/ADD/UNSUBS    	keys = symbols (ie. SPY_111819C300)	                       0,1,2,3,4                  data
+        21	NEWS_HEADLINE        	SUBS/ADD/UNSUBS    	keys = symbols                                      	   0,1,2,..,10                data
+        22	NEWS_HEADLINELIST    	GET                	keys = symbols                                         	   None                       snapshot
+        23	NEWS_STORY           	GET                	story_id (ie. SN20191111010526)                        	   None                       snapshot
+        24	CHART_HISTORY_FUTURES	GET                	symbols, frequency: "m1","m5","m10","m30","h1","d1","w1","n1",
+                                                        perdiod: "d5","w4","n10","y1","y10", sT, eT		           None                       snapshot
+        25	FOREX_BOOK           	SUBS               	Service not available or temporary down.
+        26	FUTURES_BOOK         	SUBS               	Service not available or temporary down.		
+        27	LEVELONE_FUTURES_OPTIONS SUBS            	Service not available or temporary down.
+        28	FUTURES_OPTIONS_BOOK	SUBS            	Not managed
+        29	TIMESALE_FOREX       	SUBS               	Not managed
+        30	LEVELTWO_FUTURES       	SUBS             	Not managed			
+        31	STREAMER_SERVER	                            Not managed
 
     '''
   
@@ -95,7 +95,9 @@ class TDStreamer():
   
         self.notify = []
         self.response = []
+        self.snapshot = []
         self.data_diff = []
+        
         
         '''
             The following part create an object TDAPI in order to get the: "streamerSubscriptionKeys" for ACCT_ACTIVITY method (Account activity subscription),
@@ -136,6 +138,24 @@ class TDStreamer():
         
         return 'Stream object connected: {}'.format(self.LoggedIn)
 
+    
+    def start_streamer(self):
+        if self.LoggedIn == False:
+            #connect the SQL database
+            self.database_connect()
+            #connect websocket
+            self.connect()
+            #start connection
+            self.ws.on_open = self.on_open
+            #prepare a thread to have streaming forever while allow to send other commands
+            self.ws_thread = Thread(target=self.ws.run_forever)
+            self.ws_thread.daemon = True
+            #start thread
+            self.ws_thread.start()
+        else:
+            print("Streamer already started")
+    
+   
     def database_connect(self):
         
         # define the server and the database, YOU WILL NEED TO CHANGE THIS TO YOUR OWN DATABASE AND SERVER
@@ -182,85 +202,100 @@ class TDStreamer():
         #when connection is close, it closes SQL connection as well.   
         self.crsr.close()
         self.cnxn.close()
-        print("### closed ###")
+        self.LoggedIn = False
+        print("### closed at: {} local time ###".format(datetime.now()))
 
     def on_message(self, message):
-        #handle the messages it receives
+        #handle the meesages it receives
         
         message = json.loads(message,strict=False)
-        print(message)  
+        #print(message)  
         if 'notify' in message:
-            if message['notify'][0]['heartbeat'] is not None:
-                self.notify.append(message)
-                # print heartbeat time
-                #pass # This is a heartbeat ... not needed to 
-            else: 
-                print(message)
-   
+           self.notify.append(message)
+           print("Heartbeat at: "+ str(datetime.fromtimestamp(int(message['notify'][0]['heartbeat'])/1000)))  
+           
         elif 'response' in message:
             #the first response is the login answer, if it ok set the LoggedIn to True
             if (message['response'][0]['service'] == 'ADMIN') and (message['response'][0]['content']['code'] == 0):
                 self.LoggedIn = True
 
             self.response.append(message) 
-            
+
+        ### DATA HANDLE AND STORADGE IN SQL PART ###############################################################################################
+
+        elif 'snapshot' in message:
+            # snapshot from Get services
+            self.snapshot.append(message)
+ 
+        
         elif 'data' in message:
-       
+            self.data_diff.append(message)
+
+            ''' This part dumps all services in a single SQL table. All content keeps JSON format and can be query on SQL '''
+
+# =============================================================================
+#             for i in range(0,len(message['data'])):
+#                 data = message['data'][i]             
+#                 insert_query = "INSERT INTO td_service_data2 (service, timestamp, symbol, content) VALUES (?,?,?,?);"
+#
+#                 for j in range(0, len(data['content'])):
+#                     
+#                     data_tuple = (data['service'], str(data['timestamp']), data['content'][j]['key'], json.dumps(data['content'][j]))
+#                     self.database_insert(insert_query, data_tuple)
+# =============================================================================
+
+            ''' The part below segregate data on specifics tables with time adjusted (3600), and whatever left get stored in a single Table '''
+            
             for i in range(0,len(message['data'])):
-    
-                if message['data'][i]['service'] == 'TIMESALE_EQUITY':
-               
-                    insert_query = '''INSERT INTO td_Time_Sales (DateTime, Ticker, Sequence, Price, Size, LastSequence) VALUES (?,?,?,?,?,?);'''
-                    data = message['data'][i]
-               
-                    for j in range(0, len(data['content'])):
-               
+                data = message['data'][i]
+                for j in range(0, len(data['content'])):
+                
+                    
+                    if message['data'][i]['service'] == 'ACCT_ACTIVITY':
+                        insert_query = "INSERT INTO td_account_activity (service, timestamp, content) VALUES (?,?,?);" 
+                        data_tuple = (data['service'], str(data['timestamp']), json.dumps(data['content'][j]))
+                        self.database_insert(insert_query, data_tuple)
+                    
+                    
+                    elif message['data'][i]['service'] == 'TIMESALE_EQUITY':
+                   
+                        insert_query = '''INSERT INTO td_Time_Sales (DateTime, Ticker, Sequence, Price, Size, LastSequence) VALUES (?,?,?,?,?,?);'''
                         data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'], data['content'][j]['seq'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'])    
-
                         self.database_insert(insert_query, data_tuple)
-           
-                elif message['data'][i]['service'] == 'CHART_EQUITY':
-
-                    insert_query = '''INSERT INTO td_price_data (DateTime, Ticker, Sequence, open_price, high, low ,close_price, volume, LastSequence, ChartDay) VALUES (?,?,?,?,?,?,?,?,?,?);'''
-                    data = message['data'][i]
-                   
-                    for j in range(0, len(data['content'])):
-                   
+               
+                    elif message['data'][i]['service'] == 'CHART_EQUITY':
+    
+                        insert_query = '''INSERT INTO td_price_data (DateTime, Ticker, Sequence, open_price, high, low ,close_price, volume, LastSequence, ChartDay) VALUES (?,?,?,?,?,?,?,?,?,?);'''
                         data_tuple = (datetime.fromtimestamp((data['content'][j]['7']/1000)-3600), data['content'][j]['key'], data['content'][j]['seq'], data['content'][j]['1'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'], data['content'][j]['5'], data['content'][j]['6'], data['content'][j]['8'])    
-
                         self.database_insert(insert_query, data_tuple)
-                  
-                elif message['data'][i]['service'] == 'NASDAQ_BOOK':
-                   
-                    insert_query = '''INSERT INTO td_level2 (DateTime, Ticker, [Bid/Ask], Price, Size, Orders) VALUES (?,?,?,?,?,?);'''
-                    data = message['data'][i]
-                   
-                    for j in range(0, len(data['content'])):
-                   
+                      
+                    elif message['data'][i]['service'] == 'NASDAQ_BOOK':
+                       
+                        insert_query = '''INSERT INTO td_level2 (DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders) VALUES (?,?,?,?,?,?,?);'''
+
                         for k in range(0, len(data['content'][j]['2'])):
                        
-                            data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'], 'Bid', data['content'][j]['2'][k]['0'], data['content'][j]['2'][k]['1'], data['content'][j]['2'][k]['2'])      
+                            data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'], 'Bid', data['content'][j]['2'][k]['0'], data['content'][j]['2'][k]['1'], data['content'][j]['2'][k]['2'],json.dumps(data['content'][j]['2'][k]['3']))      
                             self.database_insert(insert_query, data_tuple)
                            
                         for k in range(0, len(data['content'][j]['3'])):   
                            
-                            data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'], 'Ask', data['content'][j]['3'][k]['0'], data['content'][j]['3'][k]['1'], data['content'][j]['3'][k]['2'])  
+                            data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'], 'Ask', data['content'][j]['3'][k]['0'], data['content'][j]['3'][k]['1'], data['content'][j]['3'][k]['2'],json.dumps(data['content'][j]['3'][k]['3']))  
                             self.database_insert(insert_query, data_tuple)
-        else:
-            self.data_diff.append(message)
+                            
+                    else: #Actives, Account Activity, Levelone, Quote, Option   
+                        insert_query = "INSERT INTO td_service_data (service, timestamp, symbol, content) VALUES (?,?,?,?);"                       
+                        data_tuple = (data['service'], str(data['timestamp']), data['content'][j]['key'], json.dumps(data['content'][j]))
+                        self.database_insert(insert_query, data_tuple)
+
+
   
-    def start_streamer(self):
-        #connect the SQL database
-        self.database_connect()
-        #connect websocket
-        self.connect()
-        #start connection
-        self.ws.on_open = self.on_open
-        #prepare a thread to have streaming forever while allow to send other commands
-        self.ws_thread = Thread(target=self.ws.run_forever)
-        self.ws_thread.daemon = True
-        #start thread
-        self.ws_thread.start()
+
+    '''****************************************
+    ********** Request Methods ****************
+    ****************************************'''
+    
+    
     
     def login_request(self):
         '''
@@ -1454,14 +1489,17 @@ class TDStreamer():
     def data_request_news_headlinelist(self, keys = 'SPY'):
         
         '''
-            
-            
-
-                                
+          
             NAME: keys
             DESC: Symbols in upper case and separated by commas
             TYPE: String
-                
+            
+            Snapshot fields:
+                            1	??
+                            2	list amount
+                            3	list
+                            key	symbol
+
             EXAMPLES:      
             SessionObject.data_request_news_headlinelist(keys = 'SPY')               
         '''
@@ -1489,18 +1527,23 @@ class TDStreamer():
     def data_request_news_story(self, keys):
         
         '''
-            
-            
-
-                                
+             
             NAME: keys
             DESC: StoryID
             TYPE: String
                 
-          
-            
+            Snapshot fields: 
+                            1	??
+                            2	timestamp
+                            3	story_id
+                            4	??
+                            5	story_id
+                            6	Story
+                            7	source
+                            keys	story_id
+
             EXAMPLES:      
-            SessionObject.data_request_news_story(keys = 'SPY')               
+            SessionObject.data_request_news_story(keys = 'SN20191111010526')               
         '''
                 
         
@@ -1553,15 +1596,15 @@ class TDStreamer():
             DESC: End time
             TYPE: String
                       
-            MAME: fields
-            DESC: select streaming fields.: Field   Field Name          Type        Field Description
-                                            0   	key                	String     	Ticker symbol in upper case. 
-                                            1   	Chart Time         	long       	Milliseconds since Epoch
-                                            2   	Open Price         	double     	Opening price for the minute
-                                            3    	High Price        	double     	Highest price for the minute
-                                            4   	Low Price          	double     	Chart’s lowest price for the minute
-                                            5   	Close Price        	double     	Closing price for the minute
-                                            6   	Volume             	doulbe     	Total volume for the minute
+            Snapshot fields:
+                             Field   Field Name          Type        Field Description
+                             0   	key                	String     	Ticker symbol in upper case. 
+                             1   	Chart Time         	long       	Milliseconds since Epoch
+                             2   	Open Price         	double     	Opening price for the minute
+                             3    	High Price        	double     	Highest price for the minute
+                             4   	Low Price          	double     	Chart’s lowest price for the minute
+                             5   	Close Price        	double     	Closing price for the minute
+                             6   	Volume             	doulbe     	Total volume for the minute
 
                                             
             TYPE: String                
