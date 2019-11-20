@@ -32,6 +32,8 @@ TDStream.py:
     In order to request the credentials it uses TDAPI Class.
   
     Find below subscription table.
+    
+    New feature: Keep alive method that subscribes back all subscription when connection comes alive again.
  
 TDStreamer-test-py:
 
