@@ -49,6 +49,7 @@ TDStream subscription table:
 
 TO DO: 
 
-    Add DataFrame interface converter from JSON output.
+    Add DataFrame interface to convert from JSON output.
+    Add parameter verification.
               
     Add a trigger from streamer, and ping connection to keep alive the streamer.
