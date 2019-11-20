@@ -45,8 +45,8 @@ TDStream subscription table:
 
 ![Screenshot](TDStreamerTable.png)
 
-TDAPI TO DO: 
+TO DO: 
 
-    Add DataFrame output so the requester could choose between json and DataFrame.
+    Add DataFrame interface converter from JSON output.
               
-    Add Streaming data handle. As it is most go to SQL database. 
+    Add a trigger from streamer, and ping connection to keep alive the streamer.
