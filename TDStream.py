@@ -259,19 +259,19 @@ class TDStreamer():
                     
                     elif message['data'][i]['service'] == 'TIMESALE_EQUITY':
                    
-                        insert_query = '''INSERT INTO td_Time_Sales (DateTime, Ticker, Sequence, Price, Size, LastSequence) VALUES (?,?,?,?,?,?);'''
+                        insert_query = '''INSERT INTO td_Time_Sales_Equity (DateTime, Ticker, Sequence, Price, Size, LastSequence) VALUES (?,?,?,?,?,?);'''
                         data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'], data['content'][j]['seq'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'])    
                         self.database_insert(insert_query, data_tuple)
                
                     elif message['data'][i]['service'] == 'CHART_EQUITY':
     
-                        insert_query = '''INSERT INTO td_price_data (DateTime, Ticker, Sequence, open_price, high, low ,close_price, volume, LastSequence, ChartDay) VALUES (?,?,?,?,?,?,?,?,?,?);'''
+                        insert_query = '''INSERT INTO td_price_data_equity (DateTime, Ticker, Sequence, open_price, high, low ,close_price, volume, LastSequence, ChartDay) VALUES (?,?,?,?,?,?,?,?,?,?);'''
                         data_tuple = (datetime.fromtimestamp((data['content'][j]['7']/1000)-3600), data['content'][j]['key'], data['content'][j]['seq'], data['content'][j]['1'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'], data['content'][j]['5'], data['content'][j]['6'], data['content'][j]['8'])    
                         self.database_insert(insert_query, data_tuple)
                       
                     elif message['data'][i]['service'] == 'NASDAQ_BOOK':
                        
-                        insert_query = '''INSERT INTO td_level2 (DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders) VALUES (?,?,?,?,?,?,?);'''
+                        insert_query = '''INSERT INTO td_level2_Nasdaq (DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders) VALUES (?,?,?,?,?,?,?);'''
 
                         for k in range(0, len(data['content'][j]['2'])):
                        
