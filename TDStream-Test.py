@@ -9,6 +9,8 @@ from Ameritrade_cfg import client_id, redirect_uri, account_id
 
 from TDStream import TDStreamer
 
+import json
+
 TDS = TDStreamer(client_id, redirect_uri, account_id)
 
 TDS.start_streamer()
@@ -21,16 +23,23 @@ TDS.QOS_request()
 TDS.logout_request()
 
 response = TDS.response
-data_diff = TDS.data_diff
+subs_data = TDS.subs_data
 snapshot = TDS.snapshot
 notify = TDS.notify
 
-TDS.ws.send.ping
+
+
+
+with open('data.json', 'w', encoding='utf-8') as f:
+    json.dump(subs_data, f, ensure_ascii=False, indent=4)
+
+
+with open('data.json', 'r', encoding='utf-8') as f:
+    data = json.load(f)
 
 
 TDS.ws.close()
 
-TDS.sleep
 
 TDS.data_request_account_activity(command = "SUBS", fields = '0,1,2,3')  
 #TDS.data_request_account_activity(command = "UNSUBS", fields = '0,1,2,3')  
