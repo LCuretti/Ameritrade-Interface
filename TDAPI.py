@@ -1693,7 +1693,8 @@ class TDAPI():
     '''#################################################
     #############Saved Orders ##########################
     #################################################'''
-            
+    #If you have Advance Features Eneabled fot Thinkorswim, API will not be able to handle them.
+    
     def get_savedorders_path(self, account = None, max_results = None, from_entered_time = None, to_entered_time = None, status = None):
         
         '''
