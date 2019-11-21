@@ -32,6 +32,7 @@ import json
 #import dateutil.parser
 from datetime import datetime
 import time
+import socket
 
 import pyodbc
 import websocket
@@ -95,6 +96,7 @@ class TDStreamer():
         self.started = False    # To allow Request iniciate the Login proceses if not started yet
         self.UserLogoff = False # To avoid the Keep alive function Login back when user logged off.
         self.last_message_time = 0
+        self.sleep = 2
         
         self.subs = []          # to store subscription in order to resubscribe in the keepalive function
         
@@ -143,7 +145,19 @@ class TDStreamer():
         
         return 'Stream object connected: {}'.format(self.LoggedIn)
 
-    
+
+
+
+    def is_connected(self):
+        try:
+            # connect to the host -- tells us if the host is actually
+            # reachable
+            socket.create_connection(("www.google.com", 80))
+            return True
+        except OSError:
+            pass
+        return False
+
     def start_streamer(self):
         self.started = True
         self.UserLogoff = False
@@ -159,7 +173,8 @@ class TDStreamer():
             self.ws_thread.daemon = True
             #start thread
             self.ws_thread.start()
-            time.sleep(2)
+            time.sleep(self.sleep)
+            #self.sleep = int(self.sleep * 5)
         else:
             print("Streamer already started")
     
@@ -192,7 +207,7 @@ class TDStreamer():
         
         #Prepare the websocket and method to be call on each kind of event.
         #uri is stored when init the class.
-        websocket.enableTrace(True)
+        websocket.enableTrace(True) #True to see the sending message
         self.ws = websocket.WebSocketApp(self.uri,
                               on_message = self.on_message,
                               on_error = self.on_error,
@@ -221,7 +236,11 @@ class TDStreamer():
    
     def keep_alive(self):
         print('keep#########################################')
-        time.sleep(1)
+        internet = self.is_connected()
+        while not internet:       
+            internet = self.is_connected()
+            time.sleep(self.sleep)
+
         self.start_streamer()
         
         subscriptions = self.subs
@@ -401,7 +420,7 @@ class TDStreamer():
         if self.started == False:
             self.start_streamer()
             
-        print(data_request)           
+        #print(data_request)           
         self.ws.send(json.dumps(data_request))    
 
 
@@ -595,7 +614,8 @@ class TDStreamer():
     '''********************************************
     ********** SUBSCRIPTION REQUESTS **************
     ********************************************'''
-    # You may do the subscription request with subs_request method or use the following methods
+    # You may do the subscription request with subs_request but then need to handle the ID asignation in order to add or unsunbscribe or not to 
+    # or to avoid requesting different data in same ID. In order to let the streamer handle them use followings methods
 
 
     def data_request_account_activity(self, command = "SUBS", fields = '0,1,2,3'):

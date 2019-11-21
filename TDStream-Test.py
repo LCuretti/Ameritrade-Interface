@@ -17,7 +17,7 @@ TDS.data_request_nasdaq_book(command = "SUBS", keys = 'SPY, AAPL, MELI, GOOG, AM
 TDS.data_request_chart_equity(command = "SUBS", keys = 'SPY, AAPL, MELI, GOOG, AMZN, NFLX, TSLA, NVDA, SLB, ,C, FB, MSFT, KO, DIS', fields = '0,1,2,3,4,5,6,7,8')
 TDS.data_request_timesale_equity(command = "SUBS", keys = 'SPY, AAPL, MELI, GOOG, AMZN, NFLX, TSLA, NVDA, SLB, ,C, FB, MSFT, KO, DIS', fields = '0,1,2,3,4')      
 
-TDS.QOS_streamer()
+TDS.QOS_request()
 TDS.logout_request()
 
 response = TDS.response
@@ -25,6 +25,12 @@ data_diff = TDS.data_diff
 snapshot = TDS.snapshot
 notify = TDS.notify
 
+TDS.ws.send.ping
+
+
+TDS.ws.close()
+
+TDS.sleep
 
 TDS.data_request_account_activity(command = "SUBS", fields = '0,1,2,3')  
 #TDS.data_request_account_activity(command = "UNSUBS", fields = '0,1,2,3')  
