@@ -207,7 +207,7 @@ class TDStreamer():
         
         #Prepare the websocket and method to be call on each kind of event.
         #uri is stored when init the class.
-        websocket.enableTrace(True) #True to see the sending message
+        websocket.enableTrace(False) #True to see the sending message
         self.ws = websocket.WebSocketApp(self.uri,
                               on_message = self.on_message,
                               on_error = self.on_error,
@@ -237,12 +237,16 @@ class TDStreamer():
     def keep_alive(self):
         print('keep#########################################')
         internet = self.is_connected()
+        
+        #Wait to have internet back in case this was the reson of teh interruption
         while not internet:       
             internet = self.is_connected()
             time.sleep(self.sleep)
-
+        
+        #Restart the streamer
         self.start_streamer()
         
+        #subscribe all subscription as before the interruption
         subscriptions = self.subs
         self.subs = []
         for subs in subscriptions:
