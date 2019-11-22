@@ -169,7 +169,7 @@ class TDStreamer():
             #start connection
             self.ws.on_open = self.on_open
             #prepare a thread to have streaming forever while allow to send other commands
-            self.ws_thread = Thread(target=self.ws.run_forever)
+            self.ws_thread = Thread(name='ws', target=self.ws.run_forever)
             self.ws_thread.daemon = True
             #start thread
             self.ws_thread.start()
@@ -233,7 +233,17 @@ class TDStreamer():
             #pass
             self.keep_alive()
             
-   
+    # Method that run in a separate thread and check if websocket connection is alive.  
+    def check_connectivity(self):
+        
+        while self.LoggedIn:
+            #print('alive')
+            if (datetime.now() - self.last_message_time).seconds > 20:
+                #send Request so if connection is down it will rise an excemtion (on_close) that will run keep_alive
+                self.QOS_request()
+            time.sleep(5)
+
+    #Method that recover connection after it drop  
     def keep_alive(self):
         print('keep#########################################')
         internet = self.is_connected()
@@ -270,6 +280,11 @@ class TDStreamer():
             #the first response is the login answer, if it ok set the LoggedIn to True
             if (message['response'][0]['service'] == 'ADMIN') and (message['response'][0]['content']['code'] == 0):
                 self.LoggedIn = True
+                # Method that run in a separate thread and check if websocket connection is alive.
+                self.check = Thread(name='check', target=self.check_connectivity)
+                self.check.daemon = True
+                self.check.start()
+
 
             self.response.append(message) 
             print(message)
