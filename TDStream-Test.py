@@ -5,13 +5,25 @@ Created on Thu Nov  7 08:51:37 2019
 @author: LC
 """
 
+import time
+import datetime as dt
+import json
+from threading import Thread
+import csv
+import pandas
+
 from Ameritrade_cfg import client_id, redirect_uri, account_id
 
-from TDStream import TDStreamer
+from TDStream2 import TDStreamer
 
-import json
 
-TDS = TDStreamer(client_id, redirect_uri, account_id)
+# define the server and the database, YOU WILL NEED TO CHANGE THIS TO YOUR OWN DATABASE AND SERVER
+server = 'DELL-ULT\SQLEXPRESS' 
+database = 'stock_database'  
+sql_driver = '{ODBC Driver 17 for SQL Server}'
+
+
+TDS = TDStreamer(client_id, redirect_uri, account_id, server, database, sql_driver)
 
 TDS.start_streamer()
 
@@ -28,6 +40,25 @@ snapshot = TDS.snapshot
 notify = TDS.notify
 
 
+TDS.connect()
+
+TDS.last_message_time
+
+
+with open('./StreamData/TimeSales_{}.csv'.format(today)) as f:
+    print(f.read())
+
+
+with open('timesales5.csv', 'r') as csvfile:
+    reader = csv.DictReader(csvfile)
+    for row in reader:
+        print(dict(row))
+csvfile.close()    
+
+
+
+df = pandas.read_csv('timesales5.csv', 
+            index_col='time')
 
 
 with open('data.json', 'w', encoding='utf-8') as f:
@@ -39,7 +70,6 @@ with open('data.json', 'r', encoding='utf-8') as f:
 
 
 TDS.ws.close()
-
 
 TDS.data_request_account_activity(command = "SUBS", fields = '0,1,2,3')  
 #TDS.data_request_account_activity(command = "UNSUBS", fields = '0,1,2,3')  
