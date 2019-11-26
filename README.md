@@ -38,6 +38,7 @@ TDStream.py:
     Find below subscription table.
     
     New feature: Keep alive method that subscribes back all subscription when connection comes alive again.
+                CSV storadge. 
  
 TDStreamer-test-py:
 
@@ -56,4 +57,4 @@ TO DO:
     Add DataFrame interface to convert from JSON output.
     Add parameter verification.
               
-    Add a trigger from streamer, and ping connection to keep alive the streamer.
+    Add a trigger from streamer.
