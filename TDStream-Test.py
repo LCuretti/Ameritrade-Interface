@@ -14,7 +14,7 @@ import pandas
 
 from Ameritrade_cfg import client_id, redirect_uri, account_id
 
-from TDStream2 import TDStreamer
+from TDStream import TDStreamer
 
 
 # define the server and the database, YOU WILL NEED TO CHANGE THIS TO YOUR OWN DATABASE AND SERVER
