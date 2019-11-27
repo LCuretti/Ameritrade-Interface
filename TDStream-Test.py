@@ -7,16 +7,8 @@ Created on Thu Nov  7 08:51:37 2019
 
 
 #import datetime as dt
-import pandas
 from Ameritrade_cfg import client_id, redirect_uri, account_id
 from TDStream import TDStreamer
-
-
-# define the server and the database, YOU WILL NEED TO CHANGE THIS TO YOUR OWN DATABASE AND SERVER
-server = 'DELL-ULT\SQLEXPRESS' 
-database = 'stock_database_2'  
-sql_driver = '{ODBC Driver 17 for SQL Server}'
-
 
 TDS = TDStreamer(client_id, redirect_uri, account_id)
 
@@ -30,19 +22,18 @@ TDS.QOS_request()
 TDS.logout_request()
 
 response = TDS.response
-subs_data = TDS.subs_data
 snapshot = TDS.snapshot
 notify = TDS.notify
 
 level2 = TDS.level2_nasdaq
-
-
+timesales = TDS.time_sales_equity
+account_act = TDS.acct_activity
+chart = TDS.chart_equity
+subs_data = TDS.subs_data
+xtra_data = TDS.ext_subs
 
 TDS.connect()
-
 TDS.last_message_time
-
-
 
 TDS.ws.close()
 

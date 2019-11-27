@@ -29,7 +29,6 @@ THE SOFTWARE.
 
 import urllib
 import json
-#import dateutil.parser
 from datetime import datetime
 import time
 import socket
@@ -91,26 +90,27 @@ class TDStreamer():
             Open API object in order to get credentials, url necessary for streaming login
         '''
             
-        self.cnxn = None
-        self.crsr = None
         self.LoggedIn = False   # To check the status before send subscription request
         self.started = False    # To allow Request iniciate the Login proceses if not started yet
         self.UserLogoff = False # To avoid the Keep alive function Login back when user logged off.
         self.last_message_time = 0
         self.sleep = 2
+        self.data_count = 0     #Data count of data already stored
         
         self.subs = []          # to store subscription in order to resubscribe in the keepalive function
         
         self.notify = []        # Store notify responses (Hearbeats)
         self.response = []      # Store Response of subscription. Success or not
         self.snapshot = []      # Data from the Get requests
-        self.subs_data = []     # Data from subscription.
-        self.time_sales_equity = []
-        self.level2_nasdaq = []
-        self.acct_activity = []
-        self.chart_equity = []
+        self.subs_data = []     # Data message from subscription.
+        self.time_sales_equity = [] #time sales data cache
+        self.level2_nasdaq = []     #level2 data cache
+        self.acct_activity = []     #account activity data cache
+        self.chart_equity = []      #chart data cache
+        self.ext_subs = []          #extra subscription data cache
        
 
+        
         # Create StreamData folder for CSV storadge if it does not exist
         if not os.path.isdir('./StreamData'):
             os.mkdir('StreamData')
@@ -176,7 +176,9 @@ class TDStreamer():
             print("Streamer already started")
     
     def csv_open(self):
-        today = datetime.today().strftime('%Y-%m-%d')
+        #Prepare the CSV files an open them to store the data
+        self.today = datetime.today()
+        today = self.today.strftime('%Y-%m-%d')
         
         if not os.path.isfile('./StreamData/Account_Activity_{}.csv'.format(today)):
             #initial content
@@ -186,7 +188,7 @@ class TDStreamer():
         if not os.path.isfile('./StreamData/Timesales_Equity_{}.csv'.format(today)):
             #initial content
             with open('./StreamData/Timesales_Equity_{}.csv'.format(today),'w') as f:
-                f.write('DateTime, Ticker, Sequence, Price, Size, LastSequence\n') # TRAILING NEWLINE                  
+                f.write('DateTime, Ticker, Sequence, Price, Size, LastSequence, Message_Timestamp\n') # TRAILING NEWLINE                  
         
         if not os.path.isfile('./StreamData/Data_{}.csv'.format(today)):
             #initial content
@@ -196,7 +198,7 @@ class TDStreamer():
         if not os.path.isfile('./StreamData/Nasdaq_book_{}.csv'.format(today)):
             #initial content
             with open('./StreamData/Nasdaq_book_{}.csv'.format(today),'w') as f:
-                f.write('DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders\n') # TRAILING NEWLINE                     
+                f.write('DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders, Message_Timestamp\n') # TRAILING NEWLINE                     
         
         if not os.path.isfile('./StreamData/Chart_Equity_{}.csv'.format(today)):
             #initial content
@@ -217,14 +219,14 @@ class TDStreamer():
         self.d_writer = csv.writer(self.d_csv)
 
     def csv_close(self):
+        #close CSV files when connection drops or loggof
         self.ac_csv.close()
         self.ts_csv.close()
         self.ce_csv.close()
         self.nb_csv.close()
         self.d_csv.close()
   
-    def connect(self):
-        
+    def connect(self):       
         #Prepare the websocket and method to be call on each kind of event.
         #uri is stored when init the class.
         websocket.enableTrace(False) #True to see the sending message
@@ -233,8 +235,7 @@ class TDStreamer():
                               on_error = self.on_error,
                               on_close = self.on_close)
 
-    def on_open(self):   
-         
+    def on_open(self):           
         #when connection is open send the logging request
         self.login_request()
         
@@ -249,8 +250,43 @@ class TDStreamer():
         if not self.UserLogoff: #if user logged off
             self.keep_alive()
 
-    # check internet connectivity            
+
+    def on_message(self, message):
+        #handle the messages it receives                       
+        self.last_message_time = datetime.now()      
+        message = json.loads(message,strict=False)
+
+        #print(message)  
+        if 'notify' in message:
+           self.notify.append(message)
+           
+           if 'heartbeat' in message['notify'][0]:
+               print("Heartbeat at: "+ str(datetime.fromtimestamp(int(message['notify'][0]['heartbeat'])/1000)))  
+               
+           else:
+               print(message)
+           
+        elif 'response' in message:
+            #the first response is the login answer, if it ok set the LoggedIn to True
+            if (message['response'][0]['service'] == 'ADMIN') and (message['response'][0]['content']['code'] == 0):
+                self.LoggedIn = True
+                # Method that run in a separate thread and check if websocket connection is alive.
+                self.cache = Thread(name='check', target=self.cache_store)
+                self.cache.daemon = True
+                self.cache.start()
+
+            self.response.append(message) 
+            print(message)
+
+        elif 'snapshot' in message:
+            # snapshot from Get services
+            self.snapshot.append(message)
+       
+        elif 'data' in message:
+            self.subs_data.append(message)
+               
     def is_connected(self):
+        # check internet connectivity     
         try:
             # connect to the host -- tells us if the host is actually
             # reachable
@@ -259,20 +295,11 @@ class TDStreamer():
         except OSError:
             pass
         return False
-    
-    # Method that run in a separate thread and check if websocket connection is alive.  
-    def check_connectivity(self):
-        
-        while self.LoggedIn:
-            #print('alive')
-            if (datetime.now() - self.last_message_time).seconds > 20:
-                #send Request so if connection is down it will rise an excemtion (on_close) that will run keep_alive
-                self.QOS_request()
-            time.sleep(5)
 
-    #Method that recover connection after it drop  
     def keep_alive(self):
-        print('keep#########################################')
+        #Method that recover connection after it drop  
+        
+        print('Recovering connection')
         internet = self.is_connected()
         
         #Wait to have internet back in case this was the reson of teh interruption
@@ -288,117 +315,98 @@ class TDStreamer():
         self.subs = []
         for subs in subscriptions:
             self.subs_request(subs)
+     
+    def cache_store(self):
+        # Method that run in a separate thread and check if websocket connection is alive and segregate data in list and store it in CSV.
+        while self.LoggedIn:
+            #print('alive')
+            if (datetime.now() - self.last_message_time).seconds > 20:
+                #send Request so if connection is down it will rise an excemtion (on_close) that will run keep_alive
+                self.QOS_request()
+            if (datetime.now().day - self.today.day) > 0:
+                print("New day: Creating new set of CSV")
+                self.csv_close()
+                self.csv_open()
+
+            subs_data_length = len(self.subs_data)
+            if self.data_count < subs_data_length:
             
-    def on_message(self, message):
-        #handle the messages it receives
-                
-        self.last_message_time = datetime.now()      
-        message = json.loads(message,strict=False)
-
-        #print(message)  
-        if 'notify' in message:
-           self.notify.append(message)
-           
-           if 'heartbeat' in message['notify'][0]:
-               print("Heartbeat at: "+ str(datetime.fromtimestamp(int(message['notify'][0]['heartbeat'])/1000)))  
-           else:
-               print(message)
-           
-        elif 'response' in message:
-            #the first response is the login answer, if it ok set the LoggedIn to True
-            if (message['response'][0]['service'] == 'ADMIN') and (message['response'][0]['content']['code'] == 0):
-                self.LoggedIn = True
-                # Method that run in a separate thread and check if websocket connection is alive.
-                self.check = Thread(name='check', target=self.check_connectivity)
-                self.check.daemon = True
-                self.check.start()
-
-            self.response.append(message) 
-            print(message)
-        ### DATA HANDLE AND STORADGE IN SQL PART ###############################################################################################
-
-        elif 'snapshot' in message:
-            # snapshot from Get services
-            self.snapshot.append(message)
-       
-        elif 'data' in message:
-
-            ''' The part below segregate data on specifics tables with time adjusted (3600), and whatever left get stored in a single Table '''
-            
-            for i in range(0,len(message['data'])):
-                data = message['data'][i]
-          
-                if message['data'][i]['service'] == 'ACCT_ACTIVITY':
-                    
-                    for j in range(0, len(data['content'])):    
-                        #service, timestamp, content
-                        data_tuple = (data['service'], str(data['timestamp']), json.dumps(data['content'][j]))
-
-                        self.acct_activity.append(data_tuple)
-                        #### CSV Storadge
-                        self.ac_writer.writerow(data_tuple)
-                    
-                    
-                elif message['data'][i]['service'] == 'TIMESALE_EQUITY':
-                                  
-                    for j in range(0, len(data['content'])):
-                        #DateTime, Ticker, Sequence, Price, Size, LastSequence
-                        data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'],
-                                      data['content'][j]['seq'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'])                            
-                        
-                        self.time_sales_equity.append(data_tuple)
-                        #### CSV Storadge
-                        self.ts_writer.writerow(data_tuple)  
-               
-                elif message['data'][i]['service'] == 'CHART_EQUITY':
-
-                    for j in range(0, len(data['content'])):
-                        
-                        #DateTime, Ticker, Sequence, open_price, high, low ,close_price, volume, LastSequence, ChartDay
-                        data_tuple = (datetime.fromtimestamp((data['content'][j]['7']/1000)-3600), data['content'][j]['key'], data['content'][j]['seq'],
-                                      data['content'][j]['1'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'],
-                                      data['content'][j]['5'], data['content'][j]['6'], data['content'][j]['8'])                            
-                           
-                        
-                        self.chart_equity.append(data_tuple)                     
-                        #### CSV Storadge
-                        self.ce_writer.writerow(data_tuple)   
-                                                                
-                elif message['data'][i]['service'] == 'NASDAQ_BOOK':
-                                                           
-                    for j in range(0, len(data['content'])):   
-
-                        for k in range(0, len(data['content'][j]['2'])):
+                ''' The part below segregate data on specifics tables with time adjusted (3600), and whatever left get stored in a single Table '''
+                #For new data between datacount and subs data lenght, segregate and store
+                for l in range(self.data_count, subs_data_length):
+                    message = self.subs_data[l]
+                    for i in range(0,len(message['data'])):
+                        data = message['data'][i]
+                  
+                        if message['data'][i]['service'] == 'ACCT_ACTIVITY':                   
+                            for j in range(0, len(data['content'])):  
+                                
+                                #service, timestamp, content
+                                data_tuple = (data['service'], data['timestamp'], json.dumps(data['content'][j]))
+        
+                                self.acct_activity.append(data_tuple)
+                                #### CSV Storadge
+                                self.ac_writer.writerow(data_tuple)
+                                              
+                        elif message['data'][i]['service'] == 'TIMESALE_EQUITY':                                 
+                            for j in range(0, len(data['content'])):
+                                
+                                #DateTime, Ticker, Sequence, Price, Size, LastSequence
+                                data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'],
+                                              data['content'][j]['seq'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'],data['timestamp'])                            
+                                
+                                self.time_sales_equity.append(data_tuple)
+                                #### CSV Storadge
+                                self.ts_writer.writerow(data_tuple)  
                        
-                            #DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders
-                            data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'], 'Bid', data['content'][j]['2'][k]['0'],
-                                          data['content'][j]['2'][k]['1'], data['content'][j]['2'][k]['2'],json.dumps(data['content'][j]['2'][k]['3'])) 
-                                                       
-                            self.level2_nasdaq.append(data_tuple)
-                            #### CSV Storadge
-                            self.nb_writer.writerow(data_tuple)      
-
-                           
-                        for k in range(0, len(data['content'][j]['3'])):   
-                            #DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders
-                            data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'], 'Ask', data['content'][j]['3'][k]['0'],
-                                          data['content'][j]['3'][k]['1'], data['content'][j]['3'][k]['2'],json.dumps(data['content'][j]['3'][k]['3']))  
-                            
-                            self.level2_nasdaq.append(data_tuple)
-                            #### CSV Storadge
-                            self.nb_writer.writerow(data_tuple)                                                                        
-                            
-                else: #Actives, Account Activity, Levelone, Quote, Option   
-
-                    for j in range(0, len(data['content'])):    
-                        #service, timestamp, symbol, content
-                        data_tuple = (data['service'], str(data['timestamp']), data['content'][j]['key'], json.dumps(data['content'][j]))                        
-                        
-                        self.subs_data.append(data_tuple)
-                        #### CSV Storadge
-                        self.d_writer.writerow(data_tuple)     
- 
-
+                        elif message['data'][i]['service'] == 'CHART_EQUITY':
+                            for j in range(0, len(data['content'])):
+                                
+                                #DateTime, Ticker, Sequence, open_price, high, low ,close_price, volume, LastSequence, ChartDay
+                                data_tuple = (datetime.fromtimestamp((data['content'][j]['7']/1000)-3600), data['content'][j]['key'], data['content'][j]['seq'],
+                                              data['content'][j]['1'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'],
+                                              data['content'][j]['5'], data['content'][j]['6'], data['content'][j]['8'])                            
+                                                          
+                                self.chart_equity.append(data_tuple)                     
+                                #### CSV Storadge
+                                self.ce_writer.writerow(data_tuple)   
+                                                                        
+                        elif message['data'][i]['service'] == 'NASDAQ_BOOK':                                                           
+                            for j in range(0, len(data['content'])):   
+                                for k in range(0, len(data['content'][j]['2'])):
+                               
+                                    #DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders
+                                    data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'], 'Bid', data['content'][j]['2'][k]['0'],
+                                                  data['content'][j]['2'][k]['1'], data['content'][j]['2'][k]['2'],json.dumps(data['content'][j]['2'][k]['3']),data['timestamp']) 
+                                                               
+                                    self.level2_nasdaq.append(data_tuple)
+                                    #### CSV Storadge
+                                    self.nb_writer.writerow(data_tuple)      
+                                   
+                                for k in range(0, len(data['content'][j]['3'])):   
+                                    #DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders
+                                    data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'], 'Ask', data['content'][j]['3'][k]['0'],
+                                                  data['content'][j]['3'][k]['1'], data['content'][j]['3'][k]['2'],json.dumps(data['content'][j]['3'][k]['3']),data['timestamp'])  
+                                    
+                                    self.level2_nasdaq.append(data_tuple)
+                                    #### CSV Storadge
+                                    self.nb_writer.writerow(data_tuple)                                                                        
+                                    
+                        else: #Actives, Account Activity, Levelone, Quote, Option   
+                            for j in range(0, len(data['content'])):    
+                                #service, timestamp, symbol, content
+                                data_tuple = (data['service'], data['timestamp'], data['content'][j]['key'], json.dumps(data['content'][j]))                        
+                                
+                                self.ext_subs.append(data_tuple)
+                                #### CSV Storadge
+                                self.d_writer.writerow(data_tuple)     
+                                
+                self.data_count = subs_data_length
+            #if no new data, sleep
+            else:
+                time.sleep(1)
+            
+   
     '''****************************************
     ********** Request Methods ****************
     ****************************************'''
