@@ -278,6 +278,7 @@ class TDStreamer():
         #print(message)  
         if 'notify' in message:
            self.notify.append(message)
+           
            if 'heartbeat' in message['notify'][0]:
                print("Heartbeat at: "+ str(datetime.fromtimestamp(int(message['notify'][0]['heartbeat'])/1000)))  
            else:
@@ -322,38 +323,43 @@ class TDStreamer():
             
             for i in range(0,len(message['data'])):
                 data = message['data'][i]
-                for j in range(0, len(data['content'])):
+                
                                    
-                    if message['data'][i]['service'] == 'ACCT_ACTIVITY':
-                        
+                if message['data'][i]['service'] == 'ACCT_ACTIVITY':
+                    
+                    insert_query = "INSERT INTO td_account_activity (service, timestamp, content) VALUES (?,?,?);"  
+                    
+                    if not os.path.isfile('./StreamData/Account_Activity_{}.csv'.format(today)):
+                        #initial content
+                        with open('./StreamData/Account_Activity_{}.csv'.format(today),'w') as f:
+                            f.write('Service,Timestamp,Content\n') # TRAILING NEWLINE                        
+                    
+                    for j in range(0, len(data['content'])):    
                         #service, timestamp, content
                         data_tuple = (data['service'], str(data['timestamp']), json.dumps(data['content'][j]))
 
-                        if not os.path.isfile('./StreamData/Account_Activity_{}.csv'.format(today)):
-                            #initial content
-                            with open('./StreamData/Account_Activity_{}.csv'.format(today),'w') as f:
-                                f.write('Service,Timestamp,Content\n') # TRAILING NEWLINE    
-                        
                         #### CSV Storadge
                         with open('./StreamData/Account_Activity_{}.csv'.format(today),'a', newline='') as f:
                             writer=csv.writer(f)
                             writer.writerow(data_tuple)
 
                         #### SQL storadge
-                        insert_query = "INSERT INTO td_account_activity (service, timestamp, content) VALUES (?,?,?);" 
                         self.database_insert(insert_query, data_tuple)
                     
                     
-                    elif message['data'][i]['service'] == 'TIMESALE_EQUITY':
-
+                elif message['data'][i]['service'] == 'TIMESALE_EQUITY':
+                    
+                    insert_query = '''INSERT INTO td_Time_Sales_Equity (DateTime, Ticker, Sequence, Price, Size, LastSequence) VALUES (?,?,?,?,?,?);'''                    
+                    
+                    if not os.path.isfile('./StreamData/Timesales_Equity_{}.csv'.format(today)):
+                        #initial content
+                        with open('./StreamData/Timesales_Equity_{}.csv'.format(today),'w') as f:
+                            f.write('DateTime, Ticker, Sequence, Price, Size, LastSequence\n') # TRAILING NEWLINE                        
+                                  
+                    for j in range(0, len(data['content'])):
                         #DateTime, Ticker, Sequence, Price, Size, LastSequence
                         data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'],
                                       data['content'][j]['seq'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'])                            
-                        
-                        if not os.path.isfile('./StreamData/Timesales_Equity_{}.csv'.format(today)):
-                            #initial content
-                            with open('./StreamData/Timesales_Equity_{}.csv'.format(today),'w') as f:
-                                f.write('DateTime, Ticker, Sequence, Price, Size, LastSequence\n') # TRAILING NEWLINE    
                         
                         #### CSV Storadge
                         with open('./StreamData/Timesales_Equity_{}.csv'.format(today),'a', newline='') as f:
@@ -361,39 +367,43 @@ class TDStreamer():
                             writer.writerow(data_tuple)                        
 
                         #### SQL Storadge
-                        insert_query = '''INSERT INTO td_Time_Sales_Equity (DateTime, Ticker, Sequence, Price, Size, LastSequence) VALUES (?,?,?,?,?,?);'''
                         self.database_insert(insert_query, data_tuple)
                
-                    elif message['data'][i]['service'] == 'CHART_EQUITY':
-
+                elif message['data'][i]['service'] == 'CHART_EQUITY':
+                                        
+                    insert_query = '''INSERT INTO td_price_data_equity (DateTime, Ticker, Sequence, open_price, high, low ,close_price, volume, LastSequence, ChartDay) VALUES (?,?,?,?,?,?,?,?,?,?);'''
+                    
+                    if not os.path.isfile('./StreamData/Chart_Equity_{}.csv'.format(today)):
+                        #initial content
+                        with open('./StreamData/Chart_Equity_{}.csv'.format(today),'w') as f:
+                            f.write('DateTime, Ticker, Sequence, open_price, high, low, close_price, volume, LastSequence, ChartDay\n') # TRAILING NEWLINE                      
+                    
+                    for j in range(0, len(data['content'])):
+                        
                         #DateTime, Ticker, Sequence, open_price, high, low ,close_price, volume, LastSequence, ChartDay
                         data_tuple = (datetime.fromtimestamp((data['content'][j]['7']/1000)-3600), data['content'][j]['key'], data['content'][j]['seq'],
                                       data['content'][j]['1'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'],
                                       data['content'][j]['5'], data['content'][j]['6'], data['content'][j]['8'])                            
-                        
-                        if not os.path.isfile('./StreamData/Chart_Equity_{}.csv'.format(today)):
-                            #initial content
-                            with open('./StreamData/Chart_Equity_{}.csv'.format(today),'w') as f:
-                                f.write('DateTime, Ticker, Sequence, open_price, high, low, close_price, volume, LastSequence, ChartDay\n') # TRAILING NEWLINE    
-                        
+                           
                         #### CSV Storadge
                         with open('./StreamData/Chart_Equity_{}.csv'.format(today),'a', newline='') as f:
                             writer=csv.writer(f)
                             writer.writerow(data_tuple)                                             
 
-                        #### SQL Storadge
-                        insert_query = '''INSERT INTO td_price_data_equity (DateTime, Ticker, Sequence, open_price, high, low ,close_price, volume, LastSequence, ChartDay) VALUES (?,?,?,?,?,?,?,?,?,?);'''
+                        #### SQL Storadge                    
                         self.database_insert(insert_query, data_tuple)
                       
-                    elif message['data'][i]['service'] == 'NASDAQ_BOOK':
-                       
-                        insert_query = '''INSERT INTO td_level2_Nasdaq (DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders) VALUES (?,?,?,?,?,?,?);'''
-                        
-                        if not os.path.isfile('./StreamData/Nasdaq_book_{}.csv'.format(today)):
-                            #initial content
-                            with open('./StreamData/Nasdaq_book_{}.csv'.format(today),'w') as f:
-                                f.write('DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders\n') # TRAILING NEWLINE                            
-                        
+                elif message['data'][i]['service'] == 'NASDAQ_BOOK':
+                                        
+                    insert_query = '''INSERT INTO td_level2_Nasdaq (DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders) VALUES (?,?,?,?,?,?,?);'''
+                    
+                    if not os.path.isfile('./StreamData/Nasdaq_book_{}.csv'.format(today)):
+                        #initial content
+                        with open('./StreamData/Nasdaq_book_{}.csv'.format(today),'w') as f:
+                            f.write('DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders\n') # TRAILING NEWLINE                      
+                
+                    
+                    for j in range(0, len(data['content'])):   
 
                         for k in range(0, len(data['content'][j]['2'])):
                        
@@ -422,23 +432,25 @@ class TDStreamer():
                             #### SQL Storadge
                             self.database_insert(insert_query, data_tuple)
                             
-                    else: #Actives, Account Activity, Levelone, Quote, Option   
-                        
+                else: #Actives, Account Activity, Levelone, Quote, Option   
+
+                    insert_query = "INSERT INTO td_service_data (service, timestamp, symbol, content) VALUES (?,?,?,?);"    
+
+                    if not os.path.isfile('./StreamData/Data_{}.csv'.format(today)):
+                        #initial content
+                        with open('./StreamData/Data_{}.csv'.format(today),'w') as f:
+                            f.write('Service, timestamp, Symbol, content\n') # TRAILING NEWLINE 
+                           
+                    for j in range(0, len(data['content'])):    
                         #service, timestamp, symbol, content
                         data_tuple = (data['service'], str(data['timestamp']), data['content'][j]['key'], json.dumps(data['content'][j]))                        
-                        
-                        if not os.path.isfile('./StreamData/Data_{}.csv'.format(today)):
-                            #initial content
-                            with open('./StreamData/Data_{}.csv'.format(today),'w') as f:
-                                f.write('Service, timestamp, Symbol, content\n') # TRAILING NEWLINE    
-                        
+
                         #### CSV Storadge
                         with open('./StreamData/Data_{}.csv'.format(today),'a', newline='') as f:
                             writer=csv.writer(f)
                             writer.writerow(data_tuple)                                              
 
-                        #### SQL Storadge                        
-                        insert_query = "INSERT INTO td_service_data (service, timestamp, symbol, content) VALUES (?,?,?,?);"                       
+                        #### SQL Storadge                                          
                         self.database_insert(insert_query, data_tuple)
 
 
