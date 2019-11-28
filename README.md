@@ -27,7 +27,9 @@ TDAPI-Test.py:
 
     Has multiple endpoints check for the TDAPI file.
   
-    Added customed create orders.
+    Customed create orders.
+    
+    Pandas DataFrame output for eachenpoint.
   
 TDStream.py:
 
