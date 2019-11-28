@@ -9,6 +9,7 @@ Created on Thu Nov  7 08:51:37 2019
 #import datetime as dt
 from Ameritrade_cfg import client_id, redirect_uri, account_id
 from TDStream import TDStreamer
+import pandas as pd
 
 TDS = TDStreamer(client_id, redirect_uri, account_id)
 
@@ -31,6 +32,20 @@ account_act = TDS.acct_activity
 chart = TDS.chart_equity
 subs_data = TDS.subs_data
 xtra_data = TDS.ext_subs
+
+chart[-10:-1]
+
+lvl2_df = pd.DataFrame(level2)
+lvl2_df.rename(columns={0:'DateTime',1:'Ticker',2: '[Bid/Ask]',3:'Price',4:'Size',5:'Num_Orders',6:'Orders',7:'Message_Timestamp'}, inplace=True)
+lvl2_df.set_index(['DateTime'], inplace=True)
+
+TSales_df = pd.DataFrame(timesales)
+TSales_df.rename(columns={0:'DateTime',1:'Ticker',2: 'Sequence',3:'Price',4:'Size',5:'LastSequence',6:'Message_Timestamp'}, inplace=True)
+TSales_df.set_index(['DateTime'], inplace=True)
+
+Chart_df = pd.DataFrame(chart)
+Chart_df.rename(columns={0:'DateTime',1:'Ticker',2: 'Sequence',3:'open_price',4:'high',5:'low',6:'close_price',7:'volume',8:'LastSequence',9:'ChartDay'}, inplace=True)
+Chart_df.set_index(['DateTime'], inplace=True)
 
 TDS.connect()
 TDS.last_message_time
