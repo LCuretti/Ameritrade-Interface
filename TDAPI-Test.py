@@ -7,7 +7,7 @@ Created on Thu Nov  7 08:51:37 2019
 
 import datetime as dt
 from datetime import timedelta
-
+import pandas as pd
 from TDAPI import TDAPI
 from Ameritrade_cfg import client_id, redirect_uri, account_id
 
@@ -17,15 +17,14 @@ TDAPI.Auth.authenticate()
 TDAPI.Auth.access_token
 
 
-### Preferences
+'''#################### Preferences '''
 preferences = TDAPI.get_preferences(account = account_id)
 streamer_sub_keys = TDAPI.get_streamer_subscription_keys(accounts = [account_id])
-principals = TDAPI.get_user_principals(fields = ['preferences', 'streamerConnectionInfo'])
+principals = TDAPI.get_user_principals(fields = ['preferences', 'streamerConnectionInfo','streamerSubscriptionKeys'])
 
+#DataFrame Data
+principal_df = pd.io.json.json_normalize(principals).T
 
-userPrincipalsResponse = TDAPI.get_user_principals(fields = ['streamerSubscriptionKeys'])
-
-userPrincipalsResponse2 = TDAPI.get_user_principals(fields = ['streamerConnectionInfo'])
 
 
 Payload = {   
@@ -65,36 +64,74 @@ Payload = {
 
 TDAPI.update_preferences(account = account_id, dataPayload = Payload)
 
-##### Accounts
+'''################################# Accounts '''
 accounts = TDAPI.get_accounts(account = account_id, fields = ['orders', 'positions'])
 accountss = TDAPI.get_accounts(account = 'all', fields = ['orders', 'positions'])
 
-#### Transactions
+#DataFrame Data
+accounts_df = pd.io.json.json_normalize(accounts).T
+
+'''################################# Transactions'''
 trades = TDAPI.get_transactions(account = account_id, transaction_type = 'TRADE')
 transactions = TDAPI.get_transactions(account = account_id, transaction_type = 'ALL', start_date = '2019-01-31', end_date = '2019-04-28')
 
-##### Instruments
+#DataFrame Data
+trades_df = pd.io.json.json_normalize(trades).T
+transactions_df = pd.io.json.json_normalize(transactions).T
+
+'''################################# Instruments'''
 instruments = TDAPI.search_instruments(symbol = 'SPY', projection = 'symbol-search')
 instrument_search_data = TDAPI.search_instruments('MSFT', 'fundamental')
 instrument_get_data = TDAPI.get_instruments(cusip = '594918104')
 
-#### Market Hours
+#DataFrame Data
+search_df = pd.DataFrame(instruments)
+fundamentals_df = pd.io.json.json_normalize(instrument_search_data).T
+cusip_df = pd.DataFrame(instrument_get_data).T
+
+'''####################################### Market Hours'''
 market_hours = TDAPI.get_market_hours(market = 'EQUITY', date = '2019-10-20')
 markets_hours = TDAPI.get_markets_hours(markets = 'all', date = '2019-11-20')
 
-### Movers
+#DataFrame Data
+market_df = pd.io.json.json_normalize(market_hours).T
+markets_df = pd.io.json.json_normalize(markets_hours).T
+
+'''######################################## Movers'''
 movers_data = TDAPI.get_movers(market = '$DJI', direction = 'up', change = 'value')
 
-##### Quotes
+'''######################################## Quotes'''
 quote = TDAPI.get_quote(instruments = 'AAPL')
 quotes = TDAPI.get_quotes(instruments = ['AAPL','GOOG'])
 
-#### Price History
+
+#DataFrame Data
+quotes_df = pd.DataFrame.from_dict(quotes).T
+
+for col in ('tradeTimeInLong', 'quoteTimeInLong', 'regularMarketTradeTimeInLong'):
+    quotes_df[col] = pd.to_datetime(quotes_df[col]-14400000, unit='ms')
+
+quotes_df = quotes_df.T
+
+    
+
+'''######################################### Price History'''
 Pricehistory = TDAPI.pricehistoryPeriod(symbol = 'AAPL', periodType = 'day', frequencyType = 'minute', frequency = '1', period = '1', needExtendedHoursData = 'true')
 pricehistoryDate = TDAPI.pricehistoryDates(symbol = 'AAPL', periodType = 'day', frequencyType = 'minute', frequency = '1',
                      endDate = dt.datetime.now()-timedelta(weeks=1), startDate = dt.datetime.now()-timedelta(weeks=2), needExtendedHoursData = 'true')
 
-### Options.
+#DataFrame Data
+Candles = pd.DataFrame(Pricehistory['candles'])
+Candles.set_index(pd.DatetimeIndex(Candles['datetime']/1000*10**9)-timedelta(hours=5), inplace=True)
+Candles.drop("datetime", axis=1, inplace= True)
+
+
+CandlesDate = pd.DataFrame(pricehistoryDate['candles'])
+CandlesDate.set_index(pd.DatetimeIndex(CandlesDate['datetime']/1000*10**9)-timedelta(hours=5), inplace=True)
+CandlesDate.drop("datetime", axis=1, inplace= True)
+
+
+'''###################################### Options.'''
 
 OptionChain = {
                 "symbol": "",
@@ -134,9 +171,28 @@ OptionChain = {
                 "optionType":'ALL'
               }
 
-Option = TDAPI.get_option_chain(option_chain = OptionChain)
+option = TDAPI.get_option_chain(option_chain = OptionChain)
 
-#### Watchlist
+
+#DataFrame Data
+
+ret = []
+for date in option['callExpDateMap']:
+    for strike in option['callExpDateMap'][date]:
+        ret.extend(option['callExpDateMap'][date][strike])
+for date in option['putExpDateMap']:
+    for strike in option['putExpDateMap'][date]:
+        ret.extend(option['putExpDateMap'][date][strike])
+
+df = pd.DataFrame(ret)
+for col in ('tradeTimeInLong', 'quoteTimeInLong', 'expirationDate', 'lastTradingDay'):
+    df[col] = pd.to_datetime(df[col], unit='ms')
+
+
+
+
+
+'''############################ Watchlist '''
 watchlist = TDAPI.get_watchlist_accounts(account = 'all')
 watchlistone = TDAPI.get_watchlist(account = account_id, watchlist_id = '635544934')
 TDAPI.delete_watchlist(account = account_id, watchlist_id = '48456994')
@@ -170,7 +226,8 @@ TDAPI.create_watchlist(account = account_id, name = 'Prueba23', watchlistItems =
 TDAPI.replace_watchlist(account = account_id, watchlist_id = '1330133653', name_new = 'Repru8', watchlistItems_new = Watchlist4)
 TDAPI.update_watchlist(account = account_id, watchlist_id = '1330133653', name_new = 'LLPRU64', watchlistItems_to_add = Watchlist3)
 
-#### Orders
+'''################################ Orders '''
+
 orders = TDAPI.get_orders_path(account = account_id, status = 'QUEUED')
 orders2 = TDAPI.get_orders_query(account = account_id, from_entered_time = '2019-10-01', status ='QUEUED')
 AAPLAOrder = TDAPI.get_order(account = account_id, order_id = '2358522164')
@@ -183,7 +240,7 @@ TDAPI.replace_order(account = account_id, order_Id = '2368925382', symbol = 'MEL
 
 TDAPI.cancel_order(account = account_id, order_id = '2368925382')
 
-### SavedOrders
+'''########################### SavedOrders '''
 savedorders = TDAPI.get_savedorders_path(account = account_id, status = 'QUEUED')
 
 
