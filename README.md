@@ -29,7 +29,7 @@ TDAPI-Test.py:
   
     Customed create orders.
     
-    Pandas DataFrame output for eachenpoint.
+    Pandas DataFrame output for each enpoint.
   
 TDStream.py:
 
