@@ -75,8 +75,8 @@ transactions = TDAPI.get_transactions(account = account_id, transaction_type = '
 
 ##### Instruments
 instruments = TDAPI.search_instruments(symbol = 'SPY', projection = 'symbol-search')
-instruments2 = instrument_search_data = TDAPI.search_instruments('MSFT', 'fundamental')
-instruments3 = instrument_get_data = TDAPI.get_instruments(cusip = '594918104')
+instrument_search_data = TDAPI.search_instruments('MSFT', 'fundamental')
+instrument_get_data = TDAPI.get_instruments(cusip = '594918104')
 
 #### Market Hours
 market_hours = TDAPI.get_market_hours(market = 'EQUITY', date = '2019-10-20')
