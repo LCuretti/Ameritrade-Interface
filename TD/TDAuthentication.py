@@ -163,7 +163,7 @@ class TDAuthentication(object):
                 # if user or password is not provided 
                 #Request input User and password
                 self.account_user = input('user: ')
-                self.password = input('password: ')
+                self.password = getpass.getpass('password: ')  #if you run it in Spyder enviroment password will still be shown on the terminal
 
        
         #get windows user name to point chrome driver
@@ -334,7 +334,6 @@ class TDAuthentication(object):
             # if the access token is less than 5 sec to expire or expired, then renew it.
             elif self.access_expiration - timedelta(seconds = 5) < dt.datetime.now():
                 self.refresh_access_token()
-        
-        
+
 
 
