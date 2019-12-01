@@ -342,42 +342,43 @@ class TDStreamerClient():
             self.subs_request(subs)
  
     def connect(self, database_type = 'CSV'):      
-        self.connection_started = True
+
         self.UserLogoff = False
-
-        if not self.IsLoggedIn:
-
-            # Initalize data storage protocol.
-            if database_type == 'CSV':
-                self._csv_open()        
+        
+        if not self.connection_started:
+            self.connection_started = True            
+            if not self.IsLoggedIn:
     
-            # Turn off seeing the send message.
-            websocket.enableTrace(False)
-            
-            # Initalize a new websocket object.        
-            self.td_websocket = websocket.WebSocketApp(self.uri,
-                                  on_message = self._websocket_on_message,
-                                  on_error = self._websocket_on_error,
-                                  on_close = self._websocket_on_close)
-    
-            # Define what to do on the open, in this case send our login request.
-            self.td_websocket.on_open = self._websocket_on_open
-    
-            # Create a new thread
-            self.td_websocket_thread = Thread(name='td_websocket_thread',
-                                              target=self.td_websocket.run_forever,
-                                              daemon = True)    
-         
-            # Start the thread.
-            self.td_websocket_thread.start()
-
-            while not self.IsLoggedIn:
-                time.sleep(self.sleep)
+                # Initalize data storage protocol.
+                if database_type == 'CSV':
+                    self._csv_open()        
+        
+                # Turn off seeing the send message.
+                websocket.enableTrace(False)
                 
-            print("Streamer started")
+                # Initalize a new websocket object.        
+                self.td_websocket = websocket.WebSocketApp(self.uri,
+                                      on_message = self._websocket_on_message,
+                                      on_error = self._websocket_on_error,
+                                      on_close = self._websocket_on_close)
+        
+                # Define what to do on the open, in this case send our login request.
+                self.td_websocket.on_open = self._websocket_on_open
+        
+                # Create a new thread
+                self.td_websocket_thread = Thread(name='td_websocket_thread',
+                                                  target=self.td_websocket.run_forever,
+                                                  daemon = True)    
+             
+                # Start the thread.
+                self.td_websocket_thread.start()
+    
+                while not self.IsLoggedIn:
+                    time.sleep(self.sleep)
+                    
+                print("Streamer started")
         else:
             print("Streamer already started")
-
           
     
      
