@@ -26,21 +26,19 @@ THE SOFTWARE.
 
 @author: LC
 """
-
-import urllib
-import json
-from datetime import datetime
-import time
-import socket
 import os
 import csv
-
+import time
+import json
+import urllib
+import socket
 import websocket
-from threading import Thread
-
 from TDAPI import TDAPI
+from threading import Thread
+from datetime import datetime
 
-class TDStreamer():
+
+class TDStreamerClient():
     '''
          TD Ameritrade API Class.
         
@@ -85,97 +83,100 @@ class TDStreamer():
 
     '''
   
-    def __init__(self, client_id, redirect_uri, account_id):
+    def __init__(self, client_id, redirect_uri, account_id, cache_data = True
+                 ):
         '''
             Open API object in order to get credentials, url necessary for streaming login
         '''
-            
-        self.LoggedIn = False   # To check the status before send subscription request
-        self.started = False    # To allow Request iniciate the Login proceses if not started yet
-        self.UserLogoff = False # To avoid the Keep alive function Login back when user logged off.
-        self.last_message_time = 0
-        self.sleep = 2
-        self.data_count = 0     #Data count of data already stored
-        
-        self.subs = []          # to store subscription in order to resubscribe in the keepalive function
-        
-        self.notify = []        # Store notify responses (Hearbeats)
-        self.response = []      # Store Response of subscription. Success or not
-        self.snapshot = []      # Data from the Get requests
-        self.subs_data = []     # Data message from subscription.
-        self.time_sales_equity = [] #time sales data cache
-        self.level2_nasdaq = []     #level2 data cache
-        self.acct_activity = []     #account activity data cache
-        self.chart_equity = []      #chart data cache
-        self.ext_subs = []          #extra subscription data cache
-       
 
+        # Defines the logged in state. Must be logged in to make requests.
+        self.IsLoggedIn = False
+
+        ##############################
+        # Define a flag that will determine if we are streaming or not.      
+        self.connection_started = False    # To allow Request iniciate the Login proceses if not started yet
+        self.UserLogoff = False # To avoid the Keep alive function Login back when user logged off.
+        ##############################
+
+        # define the time since last message recieved
+        self.last_message_time = 0
         
+        # default sleep behavior
+        self.sleep = 2
+
+        # number of data pulls performed.
+        self.data_count = 0
+
+        # Initalize a list that will house all the subscriptions made during the stream. If connection is loss, can pick up where we left off.
+        self.current_subscriptions = [] 
+        
+        # Define a dictionary that defines response types
+        self.response_types = {}
+        self.response_types['notify'] = []
+        self.response_types['response'] = []
+        self.response_types['snapshot'] = []
+        self.response_types['data'] = []
+
+        self.data = {}
+        self.data['level_2_nasdaq'] = []
+        self.data['account_activity'] = []
+        self.data['chart_equity'] = []
+        self.data['time_sales_equity'] = []
+        self.data['subscription_data'] = []
+ 
         # Create StreamData folder for CSV storadge if it does not exist
-        if not os.path.isdir('./StreamData'):
+        # Be careful with this, it will make it in the folder the script is in.
+        if cache_data == True and not os.path.isdir('./StreamData'):
             os.mkdir('StreamData')
 
-        
-        '''
-            The following part create an object TDAPI in order to get the: "streamerSubscriptionKeys" for ACCT_ACTIVITY method (Account activity subscription),
-                                                                           "streamerConnectionInfo" to get the connection URL, and credential for LogIn.
-            You may use other than TDAPI api to get those values.
-        '''
-
+        # Intialize the Client
         self.TDAPI = TDAPI(client_id, redirect_uri, account_id)
-        userPrincipalsResponse = self.TDAPI.get_user_principals(fields = ['streamerSubscriptionKeys', 'streamerConnectionInfo'])
 
-        # we need to get the timestamp in order to make our next request, but it needs to be parsed
-        epoch = datetime.utcfromtimestamp(0)
-        tokenTimeStamp = datetime.strptime(userPrincipalsResponse['streamerInfo']['tokenTimestamp'], "%Y-%m-%dT%H:%M:%S+0000")
-        tokenTimeStampAsMs = (tokenTimeStamp - epoch).total_seconds() * 1000
-        
-        # we need to define our credentials that we will need to make our stream
-        self.credentials = {"userid": userPrincipalsResponse['accounts'][0]['accountId'],
-                            "token": userPrincipalsResponse['streamerInfo']['token'],
-                            "company": userPrincipalsResponse['accounts'][0]['company'],
-                            "segment": userPrincipalsResponse['accounts'][0]['segment'],
-                            "cddomain": userPrincipalsResponse['accounts'][0]['accountCdDomainId'],
-                            "usergroup": userPrincipalsResponse['streamerInfo']['userGroup'],
-                            "accesslevel":userPrincipalsResponse['streamerInfo']['accessLevel'],
-                            "authorized": "Y",
-                            "timestamp": int(tokenTimeStampAsMs),
-                            "appid": userPrincipalsResponse['streamerInfo']['appId'],
-                            "acl": userPrincipalsResponse['streamerInfo']['acl'] }
-        
-        self.streamerSubscriptionKey = userPrincipalsResponse['streamerSubscriptionKeys']['keys'][0]['key']
-        self.uri = "wss://" + userPrincipalsResponse['streamerInfo']['streamerSocketUrl'] + "/ws"
+        # Grab the Streaming Keys
+        self._grab_streaming_keys()
+
         
     def __repr__(self):
         '''
             defines the string representation of our TD Ameritrade Class instance.
         '''
 
-        # define the string representation
-        
-        return 'Stream object connected: {}'.format(self.LoggedIn)
+        # define the string representation       
+        return '<TD Streaming API - Connected = {}>'.format(self.IsLoggedIn)
 
-    def start_streamer(self):
-        self.started = True
-        self.UserLogoff = False
-        while not self.LoggedIn:
-            #connect the SQL database
-            self.csv_open()
-            #connect websocket
-            self.connect()
-            #start connection
-            self.ws.on_open = self.on_open
-            #prepare a thread to have streaming forever while allow to send other commands
-            self.ws_thread = Thread(name='ws', target=self.ws.run_forever)
-            self.ws_thread.daemon = True
-            #start thread
-            self.ws_thread.start()
-            time.sleep(self.sleep)
-            #self.sleep = int(self.sleep * 5)
-        else:
-            print("Streamer already started")
-    
-    def csv_open(self):
+
+    def _grab_streaming_keys(self):
+
+        if self.TDAPI:
+
+            # Make request to User Principals endpoint to get streaming info, the connection URL and credential for LogIn.
+            userPrincipalsResponse = self.TDAPI.get_user_principals(fields = ['streamerSubscriptionKeys', 'streamerConnectionInfo'])
+
+            # Create timestamp, we need to get the timestamp in order to make our next request, but it needs to be parsed
+            epoch = datetime.utcfromtimestamp(0)
+            tokenTimeStamp = datetime.strptime(userPrincipalsResponse['streamerInfo']['tokenTimestamp'], "%Y-%m-%dT%H:%M:%S+0000")
+            tokenTimeStampAsMs = (tokenTimeStamp - epoch).total_seconds() * 1000
+            
+            # we need to define our credentials that we will need to make our stream
+            self.credentials = {"userid": userPrincipalsResponse['accounts'][0]['accountId'],
+                                "token": userPrincipalsResponse['streamerInfo']['token'],
+                                "company": userPrincipalsResponse['accounts'][0]['company'],
+                                "segment": userPrincipalsResponse['accounts'][0]['segment'],
+                                "cddomain": userPrincipalsResponse['accounts'][0]['accountCdDomainId'],
+                                "usergroup": userPrincipalsResponse['streamerInfo']['userGroup'],
+                                "accesslevel":userPrincipalsResponse['streamerInfo']['accessLevel'],
+                                "authorized": "Y",
+                                "timestamp": int(tokenTimeStampAsMs),
+                                "appid": userPrincipalsResponse['streamerInfo']['appId'],
+                                "acl": userPrincipalsResponse['streamerInfo']['acl'] }
+            
+            # Grab the streamer key for ACCT_ACTIVITY method (Account activity subscription)
+            self.streamerSubscriptionKey = userPrincipalsResponse['streamerSubscriptionKeys']['keys'][0]['key']
+
+            # grab the URI
+            self.uri = "wss://" + userPrincipalsResponse['streamerInfo']['streamerSocketUrl'] + "/ws"
+
+    def _csv_open(self):
         #Prepare the CSV files an open them to store the data
         self.today = datetime.today()
         today = self.today.strftime('%Y-%m-%d')
@@ -206,86 +207,110 @@ class TDStreamer():
                 f.write('DateTime, Ticker, Sequence, open_price, high, low, close_price, volume, LastSequence, ChartDay\n') # TRAILING NEWLINE             
         
         
-        self.ac_csv = open('./StreamData/Account_Activity_{}.csv'.format(today),'a',newline='')
-        self.ts_csv = open('./StreamData/Timesales_Equity_{}.csv'.format(today),'a',newline='')
-        self.ce_csv = open('./StreamData/Chart_Equity_{}.csv'.format(today),'a',newline='')
-        self.nb_csv = open('./StreamData/Nasdaq_book_{}.csv'.format(today),'a',newline='')
-        self.d_csv = open('./StreamData/Data_{}.csv'.format(today),'a',newline='')
+        self.Account_Activity_csv = open('./StreamData/Account_Activity_{}.csv'.format(today),'a',newline='')
+        self.Timesales_Equity_csv = open('./StreamData/Timesales_Equity_{}.csv'.format(today),'a',newline='')
+        self.Chart_Equity_csv = open('./StreamData/Chart_Equity_{}.csv'.format(today),'a',newline='')
+        self.Nasdaq_book_csv = open('./StreamData/Nasdaq_book_{}.csv'.format(today),'a',newline='')
+        self.Subscription_Data_csv = open('./StreamData/Subscription_Data_{}.csv'.format(today),'a',newline='')
         
-        self.ac_writer = csv.writer(self.ac_csv)
-        self.ts_writer = csv.writer(self.ts_csv)
-        self.ce_writer = csv.writer(self.ce_csv)
-        self.nb_writer = csv.writer(self.nb_csv)
-        self.d_writer = csv.writer(self.d_csv)
+        self.Account_Activity_writer = csv.writer(self.Account_Activity_csv)
+        self.Timesales_Equity_writer = csv.writer(self.Timesales_Equity_csv)
+        self.Chart_Equity_writer = csv.writer(self.Chart_Equity_csv)
+        self.Nasdaq_book_writer = csv.writer(self.Nasdaq_book_csv)
+        self.Subscription_Data_writer = csv.writer(self.Subscription_Data_csv)
 
-    def csv_close(self):
+    def _csv_close(self):
         #close CSV files when connection drops or loggof
-        self.ac_csv.close()
-        self.ts_csv.close()
-        self.ce_csv.close()
-        self.nb_csv.close()
-        self.d_csv.close()
-  
-    def connect(self):       
-        #Prepare the websocket and method to be call on each kind of event.
-        #uri is stored when init the class.
-        websocket.enableTrace(False) #True to see the sending message
-        self.ws = websocket.WebSocketApp(self.uri,
-                              on_message = self.on_message,
-                              on_error = self.on_error,
-                              on_close = self.on_close)
+        self.Account_Activity_csv.close()
+        self.Timesales_Equity_csv.close()
+        self.Chart_Equity_csv.close()
+        self.Nasdaq_book_csv.close()
+        self.Subscription_Data_csv.close()
 
-    def on_open(self):           
-        #when connection is open send the logging request
-        self.login_request()
+
+    def _handle_response_response(self, content = None):
+        #the first response is the login answer, if it ok set the LoggedIn to True
+        if (content['response'][0]['service'] == 'ADMIN') and (content['response'][0]['content']['code'] == 0):
+            self.IsLoggedIn = True
+            # Method that run in a separate thread and check if websocket connection is alive.  #### this part comes from response
+            self.cache_store_thread = Thread(name='cache_store_thread',
+                                target=self._cache_store,
+                                daemon = True)
+            self.cache_store_thread.start()
+          
+        self.response_types['response'].append(content) 
+        print(content)
+
+
+    def _handle_response_notify(self, content = None):
+       self.response_types['notify'].append(content)
+       
+       if 'heartbeat' in content['notify'][0]:
+           print("Heartbeat at: "+ str(datetime.fromtimestamp(int(content['notify'][0]['heartbeat'])/1000)))  
+           
+       else:
+           print(content)
+
+    def _handle_response_snapshot(self, content = None):
+        # snapshot from Get services
+        self.response_types['snapshot'].append(content)
+
+    def _handle_response_data(self, content = None):
+        self.response_types['data'].append(content)
         
-    def on_error(self, error):
-        print('Error: ' + str(error)) 
-       
-    def on_close(self):
-        self.started = False
-        self.LoggedIn = False
-        print("### closed at: {} local time ###".format(datetime.now()))
-        self.csv_close()
+        
+
+    def _websocket_on_message(self, message):
+
+        # Handle the messages it receives                       
+        self.last_message_time = datetime.now()    
+
+        # Load the message
+        message = json.loads(message, strict = False)
+
+        # Grab the Keys
+        msg_keys = message.keys()
+
+        # Handle the message appropriately
+        if 'notify' in msg_keys:
+            self._handle_response_notify(content = message)
+        elif 'response' in msg_keys:
+            self._handle_response_response(content = message)
+        elif 'snapshot' in msg_keys:
+            self._handle_response_snapshot(content = message)
+        elif 'data' in msg_keys:
+            self._handle_response_data(content = message)
+
+    def _websocket_on_open(self):
+
+        # When connection is open send the logging request
+        self.login_request()
+
+    def _websocket_on_error(self, error):
+
+        error_str = str(error)
+
+        print('Error:')
+        print('-'*40)
+        print(error_str)
+
+    def _websocket_on_close(self):
+        
+        # No longer Logged In
+        self.IsLoggedIn = False
+        self.connection_started = False
+        
+        print('Websocket is Closed.')
+        print('-'*40)
+        print('Time Closed: {}'.format(datetime.now()))
+
+        # Close the database.
+        self._csv_close()
+
         if not self.UserLogoff: #if user logged off
-            self.keep_alive()
+            self._keep_alive()
 
-
-    def on_message(self, message):
-        #handle the messages it receives                       
-        self.last_message_time = datetime.now()      
-        message = json.loads(message,strict=False)
-
-        #print(message)  
-        if 'notify' in message:
-           self.notify.append(message)
-           
-           if 'heartbeat' in message['notify'][0]:
-               print("Heartbeat at: "+ str(datetime.fromtimestamp(int(message['notify'][0]['heartbeat'])/1000)))  
-               
-           else:
-               print(message)
-           
-        elif 'response' in message:
-            #the first response is the login answer, if it ok set the LoggedIn to True
-            if (message['response'][0]['service'] == 'ADMIN') and (message['response'][0]['content']['code'] == 0):
-                self.LoggedIn = True
-                # Method that run in a separate thread and check if websocket connection is alive.
-                self.cache = Thread(name='check', target=self.cache_store)
-                self.cache.daemon = True
-                self.cache.start()
-
-            self.response.append(message) 
-            print(message)
-
-        elif 'snapshot' in message:
-            # snapshot from Get services
-            self.snapshot.append(message)
-       
-        elif 'data' in message:
-            self.subs_data.append(message)
-               
-    def is_connected(self):
+    def _is_connected(self):
         # check internet connectivity     
         try:
             # connect to the host -- tells us if the host is actually
@@ -294,47 +319,87 @@ class TDStreamer():
             return True
         except OSError:
             pass
-        return False
+        return False       
 
-    def keep_alive(self):
+    def _keep_alive(self):
         #Method that recover connection after it drop  
         
         print('Recovering connection')
-        internet = self.is_connected()
+        internet = self._is_connected()
         
         #Wait to have internet back in case this was the reson of teh interruption
         while not internet:       
-            internet = self.is_connected()
+            internet = self._is_connected()
             time.sleep(self.sleep)
         
         #Restart the streamer
-        self.start_streamer()
+        self.connect()
         
         #subscribe all subscription as before the interruption
-        subscriptions = self.subs
-        self.subs = []
+        subscriptions = self.current_subscriptions
+        self.current_subscriptions = [] ## to avoid duplicate the subscription in the list
         for subs in subscriptions:
             self.subs_request(subs)
+ 
+    def connect(self, database_type = 'CSV'):      
+        self.connection_started = True
+        self.UserLogoff = False
+
+        if not self.IsLoggedIn:
+
+            # Initalize data storage protocol.
+            if database_type == 'CSV':
+                self._csv_open()        
+    
+            # Turn off seeing the send message.
+            websocket.enableTrace(False)
+            
+            # Initalize a new websocket object.        
+            self.td_websocket = websocket.WebSocketApp(self.uri,
+                                  on_message = self._websocket_on_message,
+                                  on_error = self._websocket_on_error,
+                                  on_close = self._websocket_on_close)
+    
+            # Define what to do on the open, in this case send our login request.
+            self.td_websocket.on_open = self._websocket_on_open
+    
+            # Create a new thread
+            self.td_websocket_thread = Thread(name='td_websocket_thread',
+                                              target=self.td_websocket.run_forever,
+                                              daemon = True)    
+         
+            # Start the thread.
+            self.td_websocket_thread.start()
+
+            while not self.IsLoggedIn:
+                time.sleep(self.sleep)
+                
+            print("Streamer started")
+        else:
+            print("Streamer already started")
+
+          
+    
      
-    def cache_store(self):
+    def _cache_store(self):
         # Method that run in a separate thread and check if websocket connection is alive and segregate data in list and store it in CSV.
-        while self.LoggedIn:
+        while self.IsLoggedIn:
             #print('alive')
             if (datetime.now() - self.last_message_time).seconds > 20:
                 #send Request so if connection is down it will rise an excemtion (on_close) that will run keep_alive
                 self.QOS_request()
             if (datetime.now().day - self.today.day) > 0:
-                print("New day: Creating new set of CSV")
-                self.csv_close()
-                self.csv_open()
+                print("New day: Creating new set of CSVs")
+                self._csv_close()
+                self._csv_open()
 
-            subs_data_length = len(self.subs_data)
+            subs_data_length = len(self.response_types['data'])
             if self.data_count < subs_data_length:
             
                 ''' The part below segregate data on specifics tables with time adjusted (3600), and whatever left get stored in a single Table '''
                 #For new data between datacount and subs data lenght, segregate and store
                 for l in range(self.data_count, subs_data_length):
-                    message = self.subs_data[l]
+                    message = self.response_types['data'][l]
                     for i in range(0,len(message['data'])):
                         data = message['data'][i]
                   
@@ -344,9 +409,9 @@ class TDStreamer():
                                 #service, timestamp, content
                                 data_tuple = (data['service'], data['timestamp'], json.dumps(data['content'][j]))
         
-                                self.acct_activity.append(data_tuple)
+                                self.data['account_activity'].append(data_tuple)
                                 #### CSV Storadge
-                                self.ac_writer.writerow(data_tuple)
+                                self.Account_Activity_writer.writerow(data_tuple)
                                               
                         elif message['data'][i]['service'] == 'TIMESALE_EQUITY':                                 
                             for j in range(0, len(data['content'])):
@@ -355,9 +420,9 @@ class TDStreamer():
                                 data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'],
                                               data['content'][j]['seq'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'],data['timestamp'])                            
                                 
-                                self.time_sales_equity.append(data_tuple)
+                                self.data['time_sales_equity'].append(data_tuple)
                                 #### CSV Storadge
-                                self.ts_writer.writerow(data_tuple)  
+                                self.Timesales_Equity_writer.writerow(data_tuple)  
                        
                         elif message['data'][i]['service'] == 'CHART_EQUITY':
                             for j in range(0, len(data['content'])):
@@ -367,9 +432,9 @@ class TDStreamer():
                                               data['content'][j]['1'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'],
                                               data['content'][j]['5'], data['content'][j]['6'], data['content'][j]['8'])                            
                                                           
-                                self.chart_equity.append(data_tuple)                     
+                                self.data['chart_equity'].append(data_tuple)                     
                                 #### CSV Storadge
-                                self.ce_writer.writerow(data_tuple)   
+                                self.Chart_Equity_writer.writerow(data_tuple)   
                                                                         
                         elif message['data'][i]['service'] == 'NASDAQ_BOOK':                                                           
                             for j in range(0, len(data['content'])):   
@@ -379,27 +444,27 @@ class TDStreamer():
                                     data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'], 'Bid', data['content'][j]['2'][k]['0'],
                                                   data['content'][j]['2'][k]['1'], data['content'][j]['2'][k]['2'],json.dumps(data['content'][j]['2'][k]['3']),data['timestamp']) 
                                                                
-                                    self.level2_nasdaq.append(data_tuple)
+                                    self.data['level_2_nasdaq'].append(data_tuple)
                                     #### CSV Storadge
-                                    self.nb_writer.writerow(data_tuple)      
+                                    self.Nasdaq_book_writer.writerow(data_tuple)      
                                    
                                 for k in range(0, len(data['content'][j]['3'])):   
                                     #DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Orders
                                     data_tuple = (datetime.fromtimestamp((data['content'][j]['1']/1000)-3600), data['content'][j]['key'], 'Ask', data['content'][j]['3'][k]['0'],
                                                   data['content'][j]['3'][k]['1'], data['content'][j]['3'][k]['2'],json.dumps(data['content'][j]['3'][k]['3']),data['timestamp'])  
                                     
-                                    self.level2_nasdaq.append(data_tuple)
+                                    self.data['level_2_nasdaq'].append(data_tuple)
                                     #### CSV Storadge
-                                    self.nb_writer.writerow(data_tuple)                                                                        
+                                    self.Nasdaq_book_writer.writerow(data_tuple)                                                                        
                                     
                         else: #Actives, Account Activity, Levelone, Quote, Option   
                             for j in range(0, len(data['content'])):    
                                 #service, timestamp, symbol, content
                                 data_tuple = (data['service'], data['timestamp'], data['content'][j]['key'], json.dumps(data['content'][j]))                        
                                 
-                                self.ext_subs.append(data_tuple)
+                                self.data['subscription_data'].append(data_tuple)
                                 #### CSV Storadge
-                                self.d_writer.writerow(data_tuple)     
+                                self.Subscription_Data_writer.writerow(data_tuple)     
                                 
                 self.data_count = subs_data_length
             #if no new data, sleep
@@ -425,11 +490,13 @@ class TDStreamer():
                                                       "token": self.credentials['token'],
                                                       "version": "1.0"}}]}
             
+
+        ### Here is when we actually find out if the connection is wranted or not. For example if the uri is wrong you will not be able to log in then connectipon started is False.
         try:
-            self.ws.send(json.dumps(login_request))
+            self.td_websocket.send(json.dumps(login_request))
 
         except Exception as e:
-            self.started = False
+            self.connection_started = False
             print(str(e)) 
 
 
@@ -439,27 +506,30 @@ class TDStreamer():
             Logout closes the WebSocket Session and cleans up all subscription for the client session.
             It’s a good practice to logout when closing the client tool.
         '''     
-
-        subs_request = {"requests": [{"service": "ADMIN",
-                                       "requestid": "1",
-                                       "command": "LOGOUT",
-                                       "account": self.credentials['userid'],
-                                       "source": self.credentials['appid'],
-                                       "parameters": {}}]}
+        if self.IsLoggedIn == True:
             
-        if self.LoggedIn == True:
             self.UserLogoff = True
-            self.subs = []      
+            self.current_subscriptions = []  
+            
+            subs_request = {"requests": [{"service": "ADMIN",
+                                           "requestid": "1",
+                                           "command": "LOGOUT",
+                                           "account": self.credentials['userid'],
+                                           "source": self.credentials['appid'],
+                                           "parameters": {}}]}
+                
+        
+    
             self.data_request(subs_request)
         
         else:
-            print("Already Logged Out")
+            print('Client is already logged out.')
 
 
     def subs_request(self, subscription):
         #Method for subscription handler
         
-        self.subs = self.subs + [subscription]
+        self.current_subscriptions = self.current_subscriptions + [subscription]
         
         
         subs_request= {
@@ -485,11 +555,11 @@ class TDStreamer():
     def data_request(self, data_request):
         # Method for request handler. Thsi method is teh one that make the actual requests to WebSocket
         
-        if self.started == False:
-            self.start_streamer()
+        if self.connection_started == False:
+            self.connect()
             
         #print(data_request)           
-        self.ws.send(json.dumps(data_request))    
+        self.td_websocket.send(json.dumps(data_request))    
 
 
     def QOS_request(self, qoslevel = '2'):

@@ -8,12 +8,12 @@ Created on Thu Nov  7 08:51:37 2019
 
 #import datetime as dt
 from Ameritrade_cfg import client_id, redirect_uri, account_id
-from TDStream import TDStreamer
+from TDStream import TDStreamerClient
 import pandas as pd
 
-TDS = TDStreamer(client_id, redirect_uri, account_id)
+TDS = TDStreamerClient(client_id, redirect_uri, account_id)
 
-TDS.start_streamer()
+TDS.connect()
 
 TDS.data_request_nasdaq_book(command = "SUBS", keys = 'SPY, AAPL, MELI, GOOG, AMZN, NFLX, TSLA, NVDA, SLB, ,C, FB, MSFT, KO, DIS', fields = '0,1,2,3')
 TDS.data_request_chart_equity(command = "SUBS", keys = 'SPY, AAPL, MELI, GOOG, AMZN, NFLX, TSLA, NVDA, SLB, ,C, FB, MSFT, KO, DIS', fields = '0,1,2,3,4,5,6,7,8')
@@ -22,18 +22,19 @@ TDS.data_request_timesale_equity(command = "SUBS", keys = 'SPY, AAPL, MELI, GOOG
 TDS.QOS_request()
 TDS.logout_request()
 
-response = TDS.response
-snapshot = TDS.snapshot
-notify = TDS.notify
+response = TDS.response_types['response']
+snapshot = TDS.response_types['snapshot']
+notify = TDS.response_types['notify']
 
-level2 = TDS.level2_nasdaq
-timesales = TDS.time_sales_equity
-account_act = TDS.acct_activity
-chart = TDS.chart_equity
-subs_data = TDS.subs_data
-xtra_data = TDS.ext_subs
+subs_data = TDS.response_types['data']
 
-chart[-10:-1]
+level2 = TDS.data['level_2_nasdaq']
+timesales = TDS.data['time_sales_equity']
+account_act = TDS.data['account_activity']
+chart = TDS.data['chart_equity']
+xtra_data = TDS.data['subscription_data']
+
+
 
 lvl2_df = pd.DataFrame(level2)
 lvl2_df.rename(columns={0:'DateTime',1:'Ticker',2: '[Bid/Ask]',3:'Price',4:'Size',5:'Num_Orders',6:'Orders',7:'Message_Timestamp'}, inplace=True)
@@ -50,7 +51,7 @@ Chart_df.set_index(['DateTime'], inplace=True)
 TDS.connect()
 TDS.last_message_time
 
-TDS.ws.close()
+TDS.td_websocket.close()
 
 TDS.data_request_account_activity(command = "SUBS", fields = '0,1,2,3')  
 #TDS.data_request_account_activity(command = "UNSUBS", fields = '0,1,2,3')  
