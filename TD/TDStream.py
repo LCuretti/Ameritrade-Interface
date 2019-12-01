@@ -92,11 +92,9 @@ class TDStreamerClient():
         # Defines the logged in state. Must be logged in to make requests.
         self.IsLoggedIn = False
 
-        ##############################
         # Define a flag that will determine if we are streaming or not.      
-        self.connection_started = False    # To allow Request iniciate the Login proceses if not started yet
-        self.UserLogoff = False # To avoid the Keep alive function Login back when user logged off.
-        ##############################
+        self.connection_started = False    # To avoid new connection request while is loggin in.
+        self.UserLogoff = False            # To avoid the Keep alive function Login back when user logged off.
 
         # define the time since last message recieved
         self.last_message_time = 0
