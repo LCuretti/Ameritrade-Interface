@@ -232,7 +232,7 @@ class TDStreamerClient():
         #the first response is the login answer, if it ok set the LoggedIn to True
         if (content['response'][0]['service'] == 'ADMIN') and (content['response'][0]['content']['code'] == 0):
             self.IsLoggedIn = True
-            # Method that run in a separate thread and check if websocket connection is alive.  #### this part comes from response
+            # Method that run in a separate thread and check if websocket connection is alive.  
             self.cache_store_thread = Thread(name='cache_store_thread',
                                 target=self._cache_store,
                                 daemon = True)
