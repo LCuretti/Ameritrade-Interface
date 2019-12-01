@@ -8,7 +8,7 @@ Created on Thu Nov  7 08:51:37 2019
 
 #import datetime as dt
 from Ameritrade_cfg import client_id, redirect_uri, account_id
-from TDStream_old import TDStreamer
+from TDStream_v3 import TDStreamer  ##CSV Version
 import pandas as pd
 
 TDS = TDStreamer(client_id, redirect_uri, account_id)
