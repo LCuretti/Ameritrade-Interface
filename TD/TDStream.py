@@ -189,9 +189,9 @@ class TDStreamerClient():
             with open('./StreamData/Timesales_Equity_{}.csv'.format(today),'w') as f:
                 f.write('DateTime, Ticker, Sequence, Price, Size, LastSequence, Message_Timestamp\n') # TRAILING NEWLINE                  
         
-        if not os.path.isfile('./StreamData/Data_{}.csv'.format(today)):
+        if not os.path.isfile('./StreamData/Subscription_Data_{}.csv'.format(today)):
             #initial content
-            with open('./StreamData/Data_{}.csv'.format(today),'w') as f:
+            with open('./StreamData/Subscription_Data_{}.csv'.format(today),'w') as f:
                 f.write('Service, timestamp, Symbol, content\n') # TRAILING NEWLINE         
         
         if not os.path.isfile('./StreamData/Nasdaq_book_{}.csv'.format(today)):
