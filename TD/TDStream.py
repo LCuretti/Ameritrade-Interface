@@ -202,15 +202,7 @@ class TDStreamerClient():
             with open('./StreamData/Chart_Equity_{}.csv'.format(today),'w') as f:
                 f.write('DateTime, Ticker, Sequence, open_price, high, low, close_price, volume, LastSequence, ChartDay\n') # TRAILING NEWLINE             
         
-# =============================================================================
-#         if not os.path.isfile('./StreamData/Quote_{}.csv'.format(today)):
-#             #initial content
-#             with open('./StreamData/Quote_{}.csv'.format(today),'w') as f:
-#                 f.write('DateTime, Ticker, Sequence, open_price, high, low, close_price, volume, LastSequence, ChartDay\n') # TRAILING NEWLINE             
-# 
-# =============================================================================
-
-        
+       
         self.Account_Activity_csv = open('./StreamData/Account_Activity_{}.csv'.format(today),'a',newline='')
         self.Timesales_Equity_csv = open('./StreamData/Timesales_Equity_{}.csv'.format(today),'a',newline='')
         self.Chart_Equity_csv = open('./StreamData/Chart_Equity_{}.csv'.format(today),'a',newline='')
