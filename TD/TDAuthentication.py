@@ -25,19 +25,16 @@ THE SOFTWARE.
 Created on Sun Oct 13 13:09:41 2019
 @author: LC
 """
-
-import time
-import requests
 import os
-
-import datetime as dt
-from datetime import timedelta
-
-from selenium import webdriver
-from shutil import which
-import urllib.parse as up
+import time
 import pickle
 import getpass
+import requests
+from shutil import which
+import urllib.parse as up
+from datetime import datetime
+from datetime import timedelta
+from selenium import webdriver
 
 class TDAuthentication(object):
     
@@ -107,6 +104,7 @@ class TDAuthentication(object):
         if os.path.isfile('./{}refreshtoken.pickle'.format(self.account_id)) and not self.refresh_cache:
             os.remove('./{}refreshtoken.pickle'.format(self.account_id))
 
+        print("TDAuthentication Initialized at: "+str(datetime.now()))
         
     def __repr__(self):
         '''
@@ -116,7 +114,7 @@ class TDAuthentication(object):
         #if never logged in or expired the Log in state is False        
         if self.access_expiration == None:
             self.logged_in_state = False    
-        elif self.access_expiration < dt.datetime.now():
+        elif self.access_expiration < datetime.now():
             self.logged_in_state = False
         
         # define the string representation
@@ -270,7 +268,7 @@ class TDAuthentication(object):
        
         if not self.single_access:
             self.refresh_token = decoded_content['refresh_token']    
-            self.refresh_expiration = dt.datetime.now() + timedelta(seconds = 7776000)
+            self.refresh_expiration = datetime.now() + timedelta(seconds = 7776000)
             
             # if refresh cache store the refresh token and it expiration
             if self.refresh_cache:
@@ -279,7 +277,7 @@ class TDAuthentication(object):
 
         # grab th access_token
         self.access_token = decoded_content['access_token']
-        self.access_expiration = dt.datetime.now() + timedelta(seconds = 1800)
+        self.access_expiration = datetime.now() + timedelta(seconds = 1800)
         self.logged_in_state = True
 
         
@@ -300,7 +298,7 @@ class TDAuthentication(object):
         
         decoded_content = resp.json()
         self.access_token = decoded_content['access_token']
-        self.access_expiration = dt.datetime.now() + timedelta(seconds = 1800)
+        self.access_expiration = datetime.now() + timedelta(seconds = 1800)
         self.logged_in_state = True
        
 
@@ -315,7 +313,7 @@ class TDAuthentication(object):
             if self.access_expiration == None:
                 self.get_access_token()
             
-            elif self.access_expiration - timedelta(seconds = 10) < dt.datetime.now():
+            elif self.access_expiration - timedelta(seconds = 10) < datetime.now():
                 self.get_access_token()    
 
         else:
@@ -328,11 +326,11 @@ class TDAuthentication(object):
                     self.get_access_token()
 
         
-            if self.refresh_expiration - timedelta(days = 1) < dt.datetime.now():
+            if self.refresh_expiration - timedelta(days = 1) < datetime.now():
                 self.get_access_token()
 
             # if the access token is less than 5 sec to expire or expired, then renew it.
-            elif self.access_expiration - timedelta(seconds = 5) < dt.datetime.now():
+            elif self.access_expiration - timedelta(seconds = 5) < datetime.now():
                 self.refresh_access_token()
 
 

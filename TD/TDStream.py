@@ -33,10 +33,10 @@ import json
 import urllib
 import socket
 import websocket
-from TDAPI import TDAPI
 from threading import Thread
 from datetime import datetime
 
+from TDAPI import TDAPI
 
 class TDStreamerClient():
     '''
@@ -94,7 +94,7 @@ class TDStreamerClient():
 
         # Define a flag that will determine if we are streaming or not.      
         self.connection_started = False    # To avoid new connection request while is loggin in.
-        self.UserLogoff = False            # To avoid the Keep alive function Login back when user logged off.
+        self.UserLogoff = False             # To avoid the Keep alive function Login back when user logged off.
 
         # define the time since last message recieved
         self.last_message_time = 0
@@ -129,11 +129,9 @@ class TDStreamerClient():
 
         # Intialize the Client
         self.TDAPI = TDAPI(client_id, redirect_uri, account_id)
-
-        # Grab the Streaming Keys
-        self._grab_streaming_keys()
-
         
+        print("TDStream Initialized at: "+str(datetime.now()))
+      
     def __repr__(self):
         '''
             defines the string representation of our TD Ameritrade Class instance.
@@ -204,18 +202,29 @@ class TDStreamerClient():
             with open('./StreamData/Chart_Equity_{}.csv'.format(today),'w') as f:
                 f.write('DateTime, Ticker, Sequence, open_price, high, low, close_price, volume, LastSequence, ChartDay\n') # TRAILING NEWLINE             
         
+# =============================================================================
+#         if not os.path.isfile('./StreamData/Quote_{}.csv'.format(today)):
+#             #initial content
+#             with open('./StreamData/Quote_{}.csv'.format(today),'w') as f:
+#                 f.write('DateTime, Ticker, Sequence, open_price, high, low, close_price, volume, LastSequence, ChartDay\n') # TRAILING NEWLINE             
+# 
+# =============================================================================
+
         
         self.Account_Activity_csv = open('./StreamData/Account_Activity_{}.csv'.format(today),'a',newline='')
         self.Timesales_Equity_csv = open('./StreamData/Timesales_Equity_{}.csv'.format(today),'a',newline='')
         self.Chart_Equity_csv = open('./StreamData/Chart_Equity_{}.csv'.format(today),'a',newline='')
         self.Nasdaq_book_csv = open('./StreamData/Nasdaq_book_{}.csv'.format(today),'a',newline='')
         self.Subscription_Data_csv = open('./StreamData/Subscription_Data_{}.csv'.format(today),'a',newline='')
+#        self.Quote_csv = open('./StreamData/Quote_{}.csv'.format(today),'a',newline='')
+        
         
         self.Account_Activity_writer = csv.writer(self.Account_Activity_csv)
         self.Timesales_Equity_writer = csv.writer(self.Timesales_Equity_csv)
         self.Chart_Equity_writer = csv.writer(self.Chart_Equity_csv)
         self.Nasdaq_book_writer = csv.writer(self.Nasdaq_book_csv)
         self.Subscription_Data_writer = csv.writer(self.Subscription_Data_csv)
+#        self.Quote_writer = csv.writer(self.Quote_csv)
 
     def _csv_close(self):
         #close CSV files when connection drops or loggof
@@ -224,27 +233,29 @@ class TDStreamerClient():
         self.Chart_Equity_csv.close()
         self.Nasdaq_book_csv.close()
         self.Subscription_Data_csv.close()
-
+#        self.Quote_csv.close()
 
     def _handle_response_response(self, content = None):
         #the first response is the login answer, if it ok set the LoggedIn to True
-        if (content['response'][0]['service'] == 'ADMIN') and (content['response'][0]['content']['code'] == 0):
+        if (content['response'][0]['command'] == 'LOGIN') and (content['response'][0]['content']['code'] == 0):
             self.IsLoggedIn = True
-            # Method that run in a separate thread and check if websocket connection is alive.  
+            print("Logged in at: "+ str(datetime.fromtimestamp(int(content['response'][0]['timestamp'])/1000))[:-3])  
+            # Method that run in a separate thread and check if websocket connection is alive.  #### this part comes from response
             self.cache_store_thread = Thread(name='cache_store_thread',
                                 target=self._cache_store,
                                 daemon = True)
             self.cache_store_thread.start()
-          
-        self.response_types['response'].append(content) 
-        print(content)
 
+        else: 
+            print(str(content['response'][0]['service'])+" "+str(content['response'][0]['content']['msg'])+" at: " + str(datetime.fromtimestamp(int(content['response'][0]['timestamp'])/1000))[:-3])  
+
+        self.response_types['response'].append(content) 
 
     def _handle_response_notify(self, content = None):
        self.response_types['notify'].append(content)
        
        if 'heartbeat' in content['notify'][0]:
-           print("Heartbeat at: "+ str(datetime.fromtimestamp(int(content['notify'][0]['heartbeat'])/1000)))  
+           print("Heartbeat at: "+ str(datetime.fromtimestamp(int(content['notify'][0]['heartbeat'])/1000))[:-3])  
            
        else:
            print(content)
@@ -341,11 +352,13 @@ class TDStreamerClient():
  
     def connect(self, database_type = 'CSV'):      
 
-        self.UserLogoff = False
-        
         if not self.connection_started:
-            self.connection_started = True            
+            self.connection_started = True    
+
             if not self.IsLoggedIn:
+                
+                # Grab the Streaming Keys
+                self._grab_streaming_keys()
     
                 # Initalize data storage protocol.
                 if database_type == 'CSV':
@@ -373,20 +386,21 @@ class TDStreamerClient():
     
                 while not self.IsLoggedIn:
                     time.sleep(self.sleep)
-                    
-                print("Streamer started")
+                
+                self.UserLogoff = False
+                #print("Streamer started")
         else:
             print("Streamer already started")
-          
-    
-     
+
     def _cache_store(self):
         # Method that run in a separate thread and check if websocket connection is alive and segregate data in list and store it in CSV.
         while self.IsLoggedIn:
             #print('alive')
-            if (datetime.now() - self.last_message_time).seconds > 20:
+            if (datetime.now() - self.last_message_time).seconds > 15:
                 #send Request so if connection is down it will rise an excemtion (on_close) that will run keep_alive
                 self.QOS_request()
+                time.sleep(self.sleep)
+                
             if (datetime.now().day - self.today.day) > 0:
                 print("New day: Creating new set of CSVs")
                 self._csv_close()
@@ -455,7 +469,25 @@ class TDStreamerClient():
                                     self.data['level_2_nasdaq'].append(data_tuple)
                                     #### CSV Storadge
                                     self.Nasdaq_book_writer.writerow(data_tuple)                                                                        
-                                    
+                        
+
+# =============================================================================
+#                         elif message['data'][i]['service'] == 'QUOTE':
+#                             for j in range(0, len(data['content'])):
+#                                 
+#                                 #DateTime, Ticker, Sequence, open_price, high, low ,close_price, volume, LastSequence, ChartDay
+#                                 data_tuple = (datetime.fromtimestamp((data['content'][j]['7']/1000)-3600), data['content'][j]['key'], data['content'][j]['seq'],
+#                                               data['content'][j]['1'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'],
+#                                               data['content'][j]['5'], data['content'][j]['6'], data['content'][j]['8'])                            
+#                                                           
+#                                 self.data['chart_equity'].append(data_tuple)                     
+#                                 #### CSV Storadge
+#                                 self.Chart_Equity_writer.writerow(data_tuple)     
+#                          
+#                          
+# =============================================================================
+
+                        
                         else: #Actives, Account Activity, Levelone, Quote, Option   
                             for j in range(0, len(data['content'])):    
                                 #service, timestamp, symbol, content
@@ -505,9 +537,10 @@ class TDStreamerClient():
             Logout closes the WebSocket Session and cleans up all subscription for the client session.
             It’s a good practice to logout when closing the client tool.
         '''     
+        self.UserLogoff = True
+        
         if self.IsLoggedIn == True:
             
-            self.UserLogoff = True
             self.current_subscriptions = []  
             
             subs_request = {"requests": [{"service": "ADMIN",
@@ -529,8 +562,7 @@ class TDStreamerClient():
         #Method for subscription handler
         
         self.current_subscriptions = self.current_subscriptions + [subscription]
-        
-        
+
         subs_request= {
                         "requests": [
                                     {
@@ -554,7 +586,7 @@ class TDStreamerClient():
     def data_request(self, data_request):
         # Method for request handler. Thsi method is teh one that make the actual requests to WebSocket
         
-        if self.connection_started == False:
+        if not self.connection_started:
             self.connect()
             
         #print(data_request)           
@@ -1055,7 +1087,7 @@ class TDStreamerClient():
         
         self.subs_request(subs_request)  
 
-    def data_request_quote(self, command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52'):
+    def data_request_quote(self, command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,22,23,24,25,26,27,28,29,30,31,32,33,34,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52'):
         
         '''
             Listed (NYSE, AMEX, Pacific Quotes and Trades)

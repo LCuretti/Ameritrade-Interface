@@ -29,9 +29,9 @@ Based on areed1192 / td-ameritrade-python-api
 """
 
 import json
-import urllib.parse
 import requests
-import datetime as dt
+import urllib.parse
+from datetime import datetime
 
 from TDAuthentication import TDAuthentication
 
@@ -39,7 +39,7 @@ class TDAPI():
     '''
         TD Ameritrade API Class.
         
-        Performs request to the TD Ameritrade API.
+        Performs request to the TD Ameritrade API. Response in JSON format.
         
         Method Type                 	Method             	               Type	   Header	                                 Endpoint
         Authentication	                Post Access Token	               POST	   None	                                     /oauth2/token
@@ -110,6 +110,7 @@ class TDAPI():
         
         self.Auth = TDAuthentication(self.client_id, self.redirect_uri, self.account_id)
         self.Auth.authenticate()
+        print("TDAPI Initialized at: "+str(datetime.now()))
         
     def __repr__(self):
         '''
@@ -605,7 +606,7 @@ class TDAPI():
     #############  Market Hours ################
     #########################################'''
      
-    def get_markets_hours(self, markets = "all", date = dt.datetime.now()):
+    def get_markets_hours(self, markets = "all", date = datetime.now()):
         
         '''
         Retrieve market hours for specified markets
@@ -641,7 +642,7 @@ class TDAPI():
         return requests.get(url = url, headers = merged_headers, params = data, verify = True).json()
  
     
-    def get_market_hours(self, market = None, date = dt.datetime.now()):
+    def get_market_hours(self, market = None, date = datetime.now()):
         
         '''
             Serves as the mechanism to make a request to the 
@@ -804,7 +805,7 @@ class TDAPI():
                            needExtendedHoursData = None):
         
         '''
-            Get price history for a symbol defining Period
+            Get price history for a symbol defining Period. Its provide data up to the last closed day.
 
             NAME: symbol
             DESC: 
@@ -875,10 +876,10 @@ class TDAPI():
     
     
     def pricehistoryDates(self, symbol = None, periodType = None, frequencyType = None, frequency = None, 
-                          endDate = dt.datetime.now(), startDate = dt.datetime.now(), needExtendedHoursData = 'true'):
+                          endDate = datetime.now(), startDate = datetime.now(), needExtendedHoursData = 'true'):
         
         '''
-            Get price history for a symbol defining date Interval
+            Get price history for a symbol defining date Interval. It provides data till the last second.
 
             NAME: symbol
             DESC: 
@@ -918,7 +919,7 @@ class TDAPI():
             DESC: true to return extended hours data, false for regular market hours only. Default is true
             TYPE: String
         '''
-        epoch = dt.datetime.utcfromtimestamp(0)
+        epoch = datetime.utcfromtimestamp(0)
         eD = int((endDate - epoch).total_seconds()*1000)
         sD = int((startDate - epoch).total_seconds()*1000)
         
@@ -1691,10 +1692,10 @@ class TDAPI():
             return response.content               
     
     '''#################################################
-    #############Saved Orders ##########################
+    ################Saved Orders ######################
     #################################################'''
     #If you have Advance Features Eneabled fot Thinkorswim, API will not be able to handle them.
-    
+        
     def get_savedorders_path(self, account = None, max_results = None, from_entered_time = None, to_entered_time = None, status = None):
         
         '''
