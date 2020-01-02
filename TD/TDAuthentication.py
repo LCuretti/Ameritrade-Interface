@@ -26,6 +26,7 @@ Created on Sun Oct 13 13:09:41 2019
 @author: LC
 """
 import os
+import sys
 import time
 import pickle
 import getpass
@@ -170,12 +171,29 @@ class TDAuthentication(object):
         # In order to auto-authenticate is necessary to have chromedriver. The standard path is C:/Users/{windows user}/chromedriver
         # define the location of the Chrome Driver
         options = webdriver.ChromeOptions()
-        options.binary_location = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
-        chrome_driver_binary = which('chromedriver') or "C:/Users/{}/chromedriver".format(user) #dowload latest chromedriver and store it in user folder
 
+        if sys.platform == 'darwin':
+            # MacOS
+            if os.path.exists("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"):
+                options.binary_location = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+            elif os.path.exists("/Applications/Chrome.app/Contents/MacOS/Google Chrome"):
+                options.binary_location = "/Applications/Chrome.app/Contents/MacOS/Google Chrome"
+        elif 'linux' in sys.platform:
+            # Linux
+            options.binary_location = which('google-chrome') or which('chrome') or which('chromium')
+
+        else:
+            # Windows
+            if os.path.exists('C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'):
+                options.binary_location = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
+            elif os.path.exists('C:/Program Files/Google/Chrome/Application/chrome.exe'):
+                options.binary_location = 'C:/Program Files/Google/Chrome/Application/chrome.exe'
+
+        chrome_driver_binary = which('chromedriver') or "C:/Users/{}/chromedriver".format(user) #dowload latest chromedriver and store it in user folder
+                
 
         #If Chromedriver is available 
-        if os.path.isfile(chrome_driver_binary+'.exe'):
+        if os.path.isfile(chrome_driver_binary):
         
             # if no user nor password prompt browser for authentication
             if not self.account_user or not self.password:
