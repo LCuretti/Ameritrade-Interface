@@ -132,7 +132,7 @@ class TDAPI():
         '''
         
         # first make sure the token is still valid
-        self.Auth.authenticate()
+        #self.Auth.authenticate()
                 
         # grab the access token
         token = self.Auth.access_token
