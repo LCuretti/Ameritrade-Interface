@@ -31,11 +31,13 @@ import time
 import pickle
 import getpass
 import requests
+import webbrowser
 from shutil import which
 import urllib.parse as up
 from datetime import datetime
 from datetime import timedelta
 from selenium import webdriver
+
 
 class TDAuthentication(object):
     
@@ -94,7 +96,7 @@ class TDAuthentication(object):
         self.account_user = tduser
         self.password = tdpass
         self.access_code = None
-        self.access_token = None
+        self._access_token = None
         self.refresh_token = None
         self.access_expiration = None
         self.refresh_expiration = None
@@ -122,7 +124,7 @@ class TDAuthentication(object):
         return '<TDAmeritrade Client (logged_in = {}, client_id = {})>'.format(self.logged_in_state, self.client_id)
 
     
-    def get_access_code(self):
+    def _get_access_code(self):
         '''
             Get access code which is needed for requesting the refresh token.
             
@@ -151,27 +153,15 @@ class TDAuthentication(object):
         
         # build the URL and store it in a new variable
         url = 'https://auth.tdameritrade.com/auth?response_type=code&redirect_uri=' + up.quote(self.redirect_uri) + '&client_id=' + up.quote(client_code)
-        
-        # Fully automated oauth2 authentication (if tdauser and tdapass were inputed into the function, or found as environment variables)
-        if self.account_user == None or self.password == None:
-            # user and passwrd stored retrive them
-            if self.account_cache and os.path.isfile('./{}.pickle'.format(self.account_id)):
-                with open('{}.pickle'.format(self.account_id), 'rb') as f:
-                    self.account_user, self.password = pickle.load(f)
-            else:
-                # if user or password is not provided 
-                #Request input User and password
-                self.account_user = input('user: ')
-                self.password = getpass.getpass('password: ')  #if you run it in Spyder enviroment password will still be shown on the terminal
-
-       
+              
         #get windows user name to point chrome driver
         user = getpass.getuser()
         
         # In order to auto-authenticate is necessary to have chromedriver. The standard path is C:/Users/{windows user}/chromedriver
         # define the location of the Chrome Driver
         options = webdriver.ChromeOptions()
-
+          
+ 
         if sys.platform == 'darwin':
             # MacOS
             if os.path.exists("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"):
@@ -181,7 +171,6 @@ class TDAuthentication(object):
         elif 'linux' in sys.platform:
             # Linux
             options.binary_location = which('google-chrome') or which('chrome') or which('chromium')
-
         else:
             # Windows
             if os.path.exists('C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'):
@@ -189,11 +178,25 @@ class TDAuthentication(object):
             elif os.path.exists('C:/Program Files/Google/Chrome/Application/chrome.exe'):
                 options.binary_location = 'C:/Program Files/Google/Chrome/Application/chrome.exe'
 
-        chrome_driver_binary = which('chromedriver') or "C:/Users/{}/chromedriver".format(user) #dowload latest chromedriver and store it in user folder
-                
+
+        #options.binary_location = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
+        chrome_driver_binary = which('chromedriver') or "C:/Users/{}/chromedriver.exe".format(user) #dowload latest chromedriver and store it in user folder
 
         #If Chromedriver is available 
-        if os.path.isfile(chrome_driver_binary):
+        if os.path.isfile(chrome_driver_binary):    
+            
+            # Fully automated oauth2 authentication (if tdauser and tdapass were inputed into the function, or found as environment variables)
+            if self.account_user == None or self.password == None:
+                # user and password stored retrive them
+                if self.account_cache and os.path.isfile('./{}.pickle'.format(self.account_id)):
+                    with open('{}.pickle'.format(self.account_id), 'rb') as f:
+                        self.account_user, self.password = pickle.load(f)
+                else:
+                    # if user or password is not provided 
+                    # Request input User and password
+                    self.account_user = input('user: ')
+                    self.password = getpass.getpass('password: ')  #if you run it in Spyder enviroment password will still be shown on the terminal
+        
         
             # if no user nor password prompt browser for authentication
             if not self.account_user or not self.password:
@@ -241,21 +244,22 @@ class TDAuthentication(object):
         # if not Chromedriver
         else:
             # aks the user to go to the URL provided, they will be prompted to authenticate themselves.
-            print('Please go to URL provided authorize your account: {}'.format(self.state['authorization_url']))
+            print('Please login to your account.')
+            webbrowser.open("{}".format(url))
         
             # ask the user to take the final URL after authentication and paste here so we can parse.
-            access_code = input('Paste the full URL redirect here: ')
+            access_code = input('Paste the redirected full URL here: ')
         
         #store acces_code
         self.access_code = access_code
 
    
-    def get_access_token(self):
+    def _get_access_token(self):
         '''
             Request the Refresh and Access token providing the access code, clint_id and redirect_uri.
         '''
               
-        self.get_access_code()
+        self._get_access_code()
         
         # THE AUTHENTICATION ENDPOINT
         #define the endpoint
@@ -294,12 +298,12 @@ class TDAuthentication(object):
                     pickle.dump([self.refresh_token, self.refresh_expiration], f)
 
         # grab th access_token
-        self.access_token = decoded_content['access_token']
+        self._access_token = decoded_content['access_token']
         self.access_expiration = datetime.now() + timedelta(seconds = 1800)
         self.logged_in_state = True
 
         
-    def refresh_access_token(self):
+    def _refresh_access_token(self):
         '''
             refresh the access token providing the refreshtoken. It will run each 30 min.
         '''
@@ -315,7 +319,7 @@ class TDAuthentication(object):
             raise Exception('Could not authenticate!')
         
         decoded_content = resp.json()
-        self.access_token = decoded_content['access_token']
+        self._access_token = decoded_content['access_token']
         self.access_expiration = datetime.now() + timedelta(seconds = 1800)
         self.logged_in_state = True
        
@@ -329,27 +333,32 @@ class TDAuthentication(object):
         
         if self.single_access:
             if self.access_expiration == None:
-                self.get_access_token()
+                self._get_access_token()
             
             elif self.access_expiration - timedelta(seconds = 10) < datetime.now():
-                self.get_access_token()    
+                self._get_access_token()    
 
         else:
             if self.refresh_token == None:
                 if self.refresh_cache and os.path.isfile('./{}refreshtoken.pickle'.format(self.account_id)):
                         with open('{}refreshtoken.pickle'.format(self.account_id), 'rb') as f:
                              self.refresh_token, self.refresh_expiration = pickle.load(f)
-                        self.refresh_access_token()     
+                        self._refresh_access_token()     
                 else:
-                    self.get_access_token()
+                    self._get_access_token()
 
         
             if self.refresh_expiration - timedelta(days = 1) < datetime.now():
-                self.get_access_token()
+                self._get_access_token()
 
             # if the access token is less than 5 sec to expire or expired, then renew it.
             elif self.access_expiration - timedelta(seconds = 5) < datetime.now():
-                self.refresh_access_token()
-
+                self._refresh_access_token()
+                
+ 
+    @property
+    def access_token(self):
+        self.authenticate()
+        return self._access_token
 
 
