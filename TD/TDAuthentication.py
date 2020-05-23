@@ -327,7 +327,7 @@ class TDAuthentication(object):
     def authenticate(self):
         '''
             Verify if the access token is valid and update it if neccesarly.
-            We you call it before any API request in order to avoid expiration.
+            Call it before any API request in order to avoid expiration.
             After go through it ensures that the object token is still valid for requests.
         '''
         
@@ -355,7 +355,7 @@ class TDAuthentication(object):
             elif self.access_expiration - timedelta(seconds = 5) < datetime.now():
                 self._refresh_access_token()
                 
- 
+    # Allows you to call variable access_token and it authenticate before returning it. So there is no more need to call authenticate method.           
     @property
     def access_token(self):
         self.authenticate()
