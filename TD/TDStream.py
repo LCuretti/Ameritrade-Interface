@@ -110,6 +110,9 @@ class TDStreamerClient():
         #Set time difference between local time and Eastern Standard Time
         self.hours = 2
         
+        #Set saving method
+        self.database_type = 'CSV'
+        
         # Define a dictionary that defines response types
         self.response_types = {}
         self.response_types['notify'] = []
@@ -234,6 +237,11 @@ class TDStreamerClient():
             self.IsLoggedIn = True
             ##self.UserLogoff = False
             print("Logged in at: "+ str(datetime.fromtimestamp(int(content['response'][0]['timestamp'])/1000))[:-3])  
+            
+            # Initalize data storage protocol.
+            if self.database_type == 'CSV':
+                self._csv_open()    
+                
             # Method that run in a separate thread and check if websocket connection is alive.  #### this part comes from response
             self.cache_store_thread = Thread(name='cache_store_thread',
                                 target=self._cache_store,
@@ -308,7 +316,7 @@ class TDStreamerClient():
         print('Time Closed: {}'.format(datetime.now()))
 
         # Close the database.
-        self._csv_close()
+        #self._csv_close()
 
         if not self.UserLogoff: #if user logged off
             self._keep_alive()
@@ -344,7 +352,7 @@ class TDStreamerClient():
         for subs in subscriptions:
             self.subs_request(subs)
  
-    def connect(self, database_type = 'CSV'):  
+    def connect(self):  
 
         self.UserLogoff = False
         
@@ -353,10 +361,7 @@ class TDStreamerClient():
             # Grab the Streaming Keys
             self._grab_streaming_keys()
 
-            # Initalize data storage protocol.
-            if database_type == 'CSV':
-                self._csv_open()        
-    
+   
             # Turn off seeing the send message.
             websocket.enableTrace(False)
             
@@ -493,7 +498,8 @@ class TDStreamerClient():
             #if no new data, sleep
             else:
                 time.sleep(1)
-            
+        
+        self._csv_close()
    
     '''****************************************
     ********** Request Methods ****************
