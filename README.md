@@ -3,7 +3,7 @@ Handles Authentication, WebSocket streaming subscriptions and API requests
 
 TDAuthentication.py:
 
-    Keeps a valid token access to be use by TDAPI(endpoint requests).
+    Keeps a valid token access to be used by TDAPI(endpoint requests).
     
     In order to get client_id, redirect_uri you have to register API client at https://developer.tdameritrade.com
     
