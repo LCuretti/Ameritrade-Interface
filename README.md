@@ -58,5 +58,5 @@ TO DO:
 
     Add DataFrame interface to convert from JSON output.
     Add parameter verification.
-              
-    Add a trigger from streamer.
+             
+ 
