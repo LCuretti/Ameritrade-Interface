@@ -41,6 +41,7 @@ TDStream.py:
     
     New feature: Keep alive method that subscribes back all subscription when connection comes alive again.
                 CSV storadge. 
+                Callback function to trigger observers when new data arrives.
  
 TDStreamer-test-py:
 
