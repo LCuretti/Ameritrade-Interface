@@ -5,17 +5,22 @@ Created on Thu Nov  7 08:51:37 2019
 @author: LC
 """
 
-import datetime as dt
-from datetime import timedelta
 import pandas as pd
-from TDAPI import TDAPI
-from Ameritrade_cfg import client_id, redirect_uri, account_id
+from datetime import datetime, timedelta
 
-TDAPI = TDAPI(client_id, redirect_uri, account_id)
+
+from Ameritrade_cfg_obj import TDConfig
+from TDAPI import TDAPI
+
+
+TDCFG = TDConfig()
+TDAPI = TDAPI(TDCFG)
 
 TDAPI.Auth.authenticate()
 TDAPI.Auth.access_token
 
+
+account_id = TDCFG.account_id
 
 '''#################### Preferences '''
 preferences = TDAPI.get_preferences(account = account_id)
@@ -23,14 +28,35 @@ streamer_sub_keys = TDAPI.get_streamer_subscription_keys(accounts = [account_id]
 principals = TDAPI.get_user_principals(fields = ['preferences', 'streamerConnectionInfo','streamerSubscriptionKeys'])
 
 #DataFrame Data
-principal_df = pd.io.json.json_normalize(principals).T
+def flatten_json(y):
+    out = {}
+
+    def flatten(x, name=''):
+        if type(x) is dict:
+            for a in x:
+                flatten(x[a], name + a + '.')
+        elif type(x) is list:
+            i = 0
+            for a in x:
+                flatten(a, name + str(i) + '.')
+                i += 1
+        else:
+            out[name[:-1]] = x
+
+    flatten(y)
+    return out
+
+flatened = flatten_json(principals)
+principal_df = pd.io.json.json_normalize(flatened).T
 
 
 
-Payload = {   
-           "expressTrading": false,
-           "directOptionsRouting": false,
-           "directEquityRouting": false,
+
+#### Preferences payload options:
+Payload = {
+           "expressTrading": False,
+           "directOptionsRouting": False,
+           "directEquityRouting": False,
            "defaultEquityOrderLegInstruction": "'BUY' or 'SELL' or 'BUY_TO_COVER' or 'SELL_SHORT' or 'NONE'",
            "defaultEquityOrderType": "'MARKET' or 'LIMIT' or 'STOP' or 'STOP_LIMIT' or 'TRAILING_STOP' or 'MARKET_ON_CLOSE' or 'NONE'",
            "defaultEquityOrderPriceLinkType": "'VALUE' or 'PERCENT' or 'NONE'",
@@ -44,7 +70,7 @@ Payload = {
            "authTokenTimeout": "'FIFTY_FIVE_MINUTES' or 'TWO_HOURS' or 'FOUR_HOURS' or 'EIGHT_HOURS'"
            }
 
-
+#### Preferences payload default:
 Payload = {
            "expressTrading": False,
            "directOptionsRouting": False,
@@ -69,10 +95,14 @@ accounts = TDAPI.get_accounts(account = account_id, fields = ['orders', 'positio
 accountss = TDAPI.get_accounts(account = 'all', fields = ['orders', 'positions'])
 
 #DataFrame Data
-accounts_df = pd.io.json.json_normalize(accounts).T
+flatened = flatten_json(accounts)
+accounts_df = pd.io.json.json_normalize(flatened).T
 
 '''################################# Transactions'''
+#### All trades last year
 trades = TDAPI.get_transactions(account = account_id, transaction_type = 'TRADE')
+
+#### All transaction specific dates
 transactions = TDAPI.get_transactions(account = account_id, transaction_type = 'ALL', start_date = '2019-01-31', end_date = '2019-04-28')
 
 #DataFrame Data
@@ -90,12 +120,15 @@ fundamentals_df = pd.io.json.json_normalize(instrument_search_data).T
 cusip_df = pd.DataFrame(instrument_get_data).T
 
 '''####################################### Market Hours'''
-market_hours = TDAPI.get_market_hours(market = 'EQUITY', date = '2019-10-20')
-markets_hours = TDAPI.get_markets_hours(markets = 'all', date = '2019-11-20')
+market_hours = TDAPI.get_market_hours(market = 'EQUITY', date = '2019-12-09')
+markets_hours = TDAPI.get_markets_hours(markets = 'all', date = '2019-12-09')
 
 #DataFrame Data
+
+flatened = flatten_json(markets_hours)
+
 market_df = pd.io.json.json_normalize(market_hours).T
-markets_df = pd.io.json.json_normalize(markets_hours).T
+markets_df = pd.io.json.json_normalize(flatened).T
 
 '''######################################## Movers'''
 movers_data = TDAPI.get_movers(market = '$DJI', direction = 'up', change = 'value')
@@ -109,16 +142,16 @@ quotes = TDAPI.get_quotes(instruments = ['AAPL','GOOG'])
 quotes_df = pd.DataFrame.from_dict(quotes).T
 
 for col in ('tradeTimeInLong', 'quoteTimeInLong', 'regularMarketTradeTimeInLong'):
-    quotes_df[col] = pd.to_datetime(quotes_df[col]-14400000, unit='ms')
+    quotes_df[col] = pd.to_datetime(quotes_df[col]/1000*10**9)-timedelta(hours=5)
 
 quotes_df = quotes_df.T
 
-    
+
 
 '''######################################### Price History'''
 Pricehistory = TDAPI.pricehistoryPeriod(symbol = 'AAPL', periodType = 'day', frequencyType = 'minute', frequency = '1', period = '1', needExtendedHoursData = 'true')
 pricehistoryDate = TDAPI.pricehistoryDates(symbol = 'AAPL', periodType = 'day', frequencyType = 'minute', frequency = '1',
-                     endDate = dt.datetime.now()-timedelta(weeks=1), startDate = dt.datetime.now()-timedelta(weeks=2), needExtendedHoursData = 'true')
+                     endDate = datetime.now()-timedelta(weeks=1), startDate = datetime.now()-timedelta(weeks=2), needExtendedHoursData = 'true')
 
 #DataFrame Data
 Candles = pd.DataFrame(Pricehistory['candles'])
@@ -136,7 +169,7 @@ CandlesDate.drop("datetime", axis=1, inplace= True)
 OptionChain = {
                 "symbol": "",
                 "contractType": ['CALL', 'PUT', 'ALL'],
-                "strikeCount": '', 
+                "strikeCount": '',
                 "includeQuotes":['TRUE','FALSE'],
                 "strategy": ['SINGLE', 'ANALYTICAL', 'COVERED', 'VERTICAL', 'CALENDAR', 'STRANGLE', 'STRADDLE', 'BUTTERFLY'],
                 "interval": '',
@@ -155,7 +188,7 @@ OptionChain = {
 OptionChain = {
                 "symbol": "AAPL",
                 "contractType": 'ALL',
-                "strikeCount": 1, 
+                "strikeCount": 1,
                 "includeQuotes":'FALSE',
                 "strategy": 'SINGLE',
                 "interval": None,
@@ -215,13 +248,13 @@ FullWatchListItem = {
                                      }
 
 '''Not sure why anyone would chosse "quantity, "averagePrice", "commission" or purchaseDate'''
-            
+
 Watchlist3 =[{"instrument":{"symbol": "KO","assetType": 'EQUITY'}},
              {"instrument":{"symbol": "GOOG","assetType": 'EQUITY'}}]
 
 Watchlist4 =[{"instrument":{"symbol": "AAPL","assetType": 'EQUITY'}},
              {"instrument":{"symbol": "MSFT","assetType": 'EQUITY'}}]
-              
+
 TDAPI.create_watchlist(account = account_id, name = 'Prueba23', watchlistItems = Watchlist3)
 TDAPI.replace_watchlist(account = account_id, watchlist_id = '1330133653', name_new = 'Repru8', watchlistItems_new = Watchlist4)
 TDAPI.update_watchlist(account = account_id, watchlist_id = '1330133653', name_new = 'LLPRU64', watchlistItems_to_add = Watchlist3)
@@ -232,10 +265,10 @@ orders = TDAPI.get_orders_path(account = account_id, status = 'QUEUED')
 orders2 = TDAPI.get_orders_query(account = account_id, from_entered_time = '2019-10-01', status ='QUEUED')
 AAPLAOrder = TDAPI.get_order(account = account_id, order_id = '2358522164')
 
-TDAPI.create_order(account = account_id, symbol = 'MELI', price = '100.00', quantity = '100', instruction = 'BUY', assetType = 'EQUITY', 
+TDAPI.create_order(account = account_id, symbol = 'MELI', price = '100.00', quantity = '100', instruction = 'BUY', assetType = 'EQUITY',
                      orderType = 'LIMIT', session = 'NORMAL', duration = 'DAY', orderStrategyType = 'SINGLE')
 
-TDAPI.replace_order(account = account_id, order_Id = '2368925382', symbol = 'MELI', price = '101.00', quantity = '50', instruction = 'BUY', assetType = 'EQUITY', 
+TDAPI.replace_order(account = account_id, order_Id = '2368925382', symbol = 'MELI', price = '101.00', quantity = '50', instruction = 'BUY', assetType = 'EQUITY',
                      orderType = 'LIMIT', session = 'NORMAL', duration = 'DAY', orderStrategyType = 'SINGLE')
 
 TDAPI.cancel_order(account = account_id, order_id = '2368925382')
@@ -255,7 +288,7 @@ BaseOrder = {'orderType':'LIMIT',
            'orderLegCollection':[
                                  {'instruction':'BUY',
                                   'quantity':100,
-                                  'instrument':{'symbol':'SPY,
+                                  'instrument':{'symbol':'SPY',
                                                 'assetType':'EQUITY'
                                                }
                                  }
@@ -322,8 +355,8 @@ FullOrder = {
             "statusDescription": "string"
         }
 
-##The class <Instrument> has the following subclasses: 
-##JSON for each are listed below: 
+##The class <Instrument> has the following subclasses:
+##JSON for each are listed below:
 instrument = {
                 Option = {
                           "assetType": "'EQUITY','OPTION','INDEX','MUTUAL_FUND','CASH_EQUIVALENT','FIXED_INCOME','CURRENCY'",
@@ -343,9 +376,9 @@ instrument = {
                                                     }
                                                 ]
                           }
-                
-                
-                
+
+
+
                 MutualFund = {
                               "assetType": "'EQUITY','OPTION','INDEX','MUTUAL_FUND','CASH_EQUIVALENT','FIXED_INCOME','CURRENCY'",
                               "cusip": "string",
@@ -353,9 +386,9 @@ instrument = {
                               "description": "string",
                               "type": "'NOT_APPLICABLE','OPEN_END_NON_TAXABLE','OPEN_END_TAXABLE','NO_LOAD_NON_TAXABLE','NO_LOAD_TAXABLE'"
                              }
-                
-                
-                
+
+
+
                 CashEquivalent = {
                                   "assetType": "'EQUITY','OPTION','INDEX','MUTUAL_FUND','CASH_EQUIVALENT','FIXED_INCOME','CURRENCY'",
                                   "cusip": "string",
@@ -363,18 +396,18 @@ instrument = {
                                   "description": "string",
                                   "type": "'SAVINGS','MONEY_MARKET_FUND'"
                                  }
-                
-                
-                
+
+
+
                 Equity = {
                           "assetType": "'EQUITY','OPTION','INDEX','MUTUAL_FUND','CASH_EQUIVALENT','FIXED_INCOME','CURRENCY'",
                           "cusip": "string",
                           "symbol": "string",
                           "description": "string"
                          }
-                
-                
-                
+
+
+
                 FixedIncome = {
                                   "assetType": "'EQUITY','OPTION','INDEX','MUTUAL_FUND','CASH_EQUIVALENT','FIXED_INCOME','CURRENCY'",
                                   "cusip": "string",
@@ -386,8 +419,8 @@ instrument = {
                                }
             }
 
-##The class <OrderActivity> has the following subclasses: 
-##JSON for each are listed below: 
+##The class <OrderActivity> has the following subclasses:
+##JSON for each are listed below:
 orderActivityCollection = {
                             Execution = {
                                           "activityType": "'EXECUTION','ORDER_ACTION'",
@@ -428,5 +461,5 @@ CustomedOrder = {
             "orderStrategyType": 'SINGLE'
         }
 
-TDAPI.create_custom_order(account = account_id, order = CustomedOrder) 
-TDAPI.replace_custom_order(account = account_id, order_Id = '2369502052', order = CustomedOrder)   
+TDAPI.create_custom_order(account = account_id, order = CustomedOrder)
+TDAPI.replace_custom_order(account = account_id, order_Id = '2369502052', order = CustomedOrder)
