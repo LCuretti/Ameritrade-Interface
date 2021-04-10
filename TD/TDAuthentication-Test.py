@@ -6,10 +6,18 @@ Created on Thu Nov 21 09:31:45 2019
 """
 
 from TDAuthentication import TDAuthentication #Authentication API
+from Ameritrade_cfg_obj import TDConfig
 
-from Ameritrade_cfg import client_id, redirect_uri, account_id  #Account information stored. You can check on Ameritrade_cfg_emptyexample
+TDCFG = TDConfig()
 
-TEST = TDAuthentication(client_id, redirect_uri, account_id)
+
+
+TEST = TDAuthentication(TDCFG)
+
+TEST.access_token
+
 TEST.authenticate()
 TEST
-TEST.access_token
+TEST._access_token
+
+TEST._get_access_token()
