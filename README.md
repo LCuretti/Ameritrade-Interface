@@ -14,7 +14,7 @@ TDAuthentication.py:
     Full Automated where account info will be stored for future authentication 
     or Full Manual where you have to authenticate each 30 min.
   
-    New feature: Handle config file as an object.
+    New feature: Handles config file as an object.
     
 TDAPI.py [Based on areed1192](https://github.com/areed1192/td-ameritrade-python-api):
 
