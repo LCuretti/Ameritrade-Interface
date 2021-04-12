@@ -12,14 +12,14 @@ import xmltodict
 from Ameritrade_cfg_obj import TDConfig
 from TDAPI import TDAPI
 from TDStream import TDStreamerClient
-from TDPortfolio import Portfolio
+from TDAccountInfo import TDAccInf
 
 
 TDCFG = TDConfig()
 
 TDAPI = TDAPI(TDCFG)
 
-Porfo = Portfolio(TDAPI, account_id = TDCFG.account_id, method='LIFO')
+TDAccInf = TDAccInf(TDAPI, account_id = TDCFG.account_id, method='LIFO')
 
 TDS = TDStreamerClient(TDAPI)
 
@@ -96,6 +96,7 @@ subs_act = TDS.data['subscription_data']
 notify = TDS.response_types['notify']
 response = TDS.response_types['response']
 snapshot = TDS.response_types['snapshot']
+data = TDS.response_types['data']
 
 ######################################################
 
@@ -104,8 +105,9 @@ subs = TDS.current_subscriptions
 
 # TDS.logout_request()
 
+################################################################################################
 
-###############################################
+
 
 
 accountActivity = []

@@ -281,8 +281,8 @@ class TDStreamerClient():
         self.response_types['snapshot'].append(content)
 
     def _handle_response_data(self, content = None):
-        self.response_types['data'].append(content)
-        self._data_store(content)
+        #self.response_types['data'].append(content)
+        self._data_segregation(content)
 
     def _websocket_on_message(self, message):
 
@@ -403,7 +403,7 @@ class TDStreamerClient():
         else:
             print("Streamer already started")
 
-    def _data_store(self,message):
+    def _data_segregation(self,message):
         ''' The part below segregate data on specifics tables with time adjusted (3600), and whatever left get stored in a single Table '''
 
         for i in range(0,len(message['data'])):
@@ -468,10 +468,14 @@ class TDStreamerClient():
 
                     self.data['subscription_data'].append(data_tuple)
 
-        #Triggers external function/method stored in observers list
+        #Triggers external function/method stored in observers list in a independed thread to be detached from wahtever loop it may have.
         for callback in self._observers:
+            callback_thread = Thread(name='callback_thread',
+                                               target=callback(data['service']),
+                                               daemon = True)
+            callback_thread.start()
             #print('announcing change')
-            callback(data['service'])
+            #callback(data['service'])
 
 
     def _cache_store(self):
