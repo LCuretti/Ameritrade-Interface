@@ -1,6 +1,6 @@
 # Ameritrade Python Interface
 Handles Authentication, WebSocket streaming subscriptions and API requests. 
-Developed on Windows Spyder. 
+(Developed on Windows Spyder) 
 
 TDAuthentication.py:
 
