@@ -99,11 +99,6 @@ class TDAPI():
             Initialize object with provided account info
             Open Authentication object to have a valid access token for every request.
         '''
-# =============================================================================
-#         self.client_id = client_id
-#         self.redirect_uri = redirect_uri
-#         self.account_id = account_id
-# =============================================================================
 
         '''
             The following 2 lines create authentication object and run it.
@@ -132,9 +127,6 @@ class TDAPI():
             In the following two line we use the Authentication object to get a valid token.
             You may have a different way to get a valid token for the request.
         '''
-
-        # first make sure the token is still valid
-        #self.Auth.authenticate()
 
         # grab the access token
         token = self.Auth.access_token
@@ -365,7 +357,7 @@ class TDAPI():
         response = requests.put(url=url, headers = merged_headers, data = json.dumps(dataPayload), verify = True)
 
         if response.status_code == 204:
-            return "Preferences seccessfully updated."
+            return "Preferences successfully updated."
         else:
             return response.content
 

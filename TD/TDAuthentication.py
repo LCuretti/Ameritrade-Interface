@@ -236,7 +236,6 @@ class TDAuthentication(object):
                         with open('{}refreshtoken.pickle'.format(self.account_id), 'rb') as f:
                              self.refresh_token, self.refresh_expiration = pickle.load(f)
                         self.access_expiration = datetime.now() - timedelta(seconds = 10)
-                        #self._refresh_access_token()
                 else:
                     self._get_access_token()
 

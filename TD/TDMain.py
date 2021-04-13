@@ -7,7 +7,7 @@ Created on Tue May 19 12:57:24 2020
 
 from datetime import datetime, timedelta
 import json
-import xmltodict
+
 
 from Ameritrade_cfg_obj import TDConfig
 from TDAPI import TDAPI
@@ -110,6 +110,7 @@ subs = TDS.current_subscriptions
 
 
 
+
 accountActivity = []
 acc_prt = 0
 
@@ -126,15 +127,16 @@ def acc_activity_check(reponse_type=None):
 
         for activity in newActivities:
 
-            lastAcct = json.loads(activity[2])
+            #lastAcct = json.loads(activity[2])
 
-            if lastAcct['2'] != 'SUBSCRIBED' and lastAcct['2'] != 'ERROR':
-                last = xmltodict.parse(lastAcct['3'])[str(lastAcct['2']+"Message")]
+            if activity[3] != 'SUBSCRIBED' and activity[3]!= 'ERROR':
+
+                last = (activity[2],activity[6],activity[5])
                 accountActivity.append(last)
                 print(last)
                 print ("*********************************")
             else:
-                print(lastAcct['2'])
+                print(activity[3])
                 print ("*********************************")
         print ("*********************************")
         #print (account_act[-new:])
@@ -143,6 +145,5 @@ def acc_activity_check(reponse_type=None):
 
 
 TDS.bind_to(acc_activity_check)
-
 
 

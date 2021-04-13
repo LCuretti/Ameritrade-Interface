@@ -33,6 +33,7 @@ import json
 import urllib
 import socket
 import websocket
+import xmltodict
 from pytz import timezone
 from threading import Thread
 from datetime import datetime, timedelta
@@ -101,7 +102,6 @@ class TDStreamerClient():
         self.sleep = 2
 
         # number of data pulls performed.
-        #self.data_count = 0
         self.acctivity_data_count = 0
         self.timesale_equity_count = 0
         self.chart_equity_count = 0
@@ -411,60 +411,72 @@ class TDStreamerClient():
 
             if data['service'] == 'ACCT_ACTIVITY':
                 for j in range(0, len(data['content'])):
-
-                    #service, timestamp, content
-                    data_tuple = (data['service'], data['timestamp'], json.dumps(data['content'][j]))
+                    content = data['content'][j]
+                    #service, timestamp, seq, key, account#, MessageType, Content
+                    if content['2'] != 'SUBSCRIBED' and content['2'] != 'ERROR':
+                        data_tuple = (data['service'], data['timestamp'], content['seq'], content['key'], content['1'], content['2'],
+                                      xmltodict.parse(content['3'])[str(content['2']+"Message")])
+                    else:
+                        data_tuple = (data['service'], data['timestamp'], content['seq'], content['2'])
+                    #data_tuple = (data['service'], data['timestamp'], json.dumps(data['content'][j]))
                     self.data['account_activity'].append(data_tuple)
 
             elif data['service'] == 'TIMESALE_EQUITY':
                 for j in range(0, len(data['content'])):
-
+                    content = data['content'][j]
                     #DateTime, Ticker, Sequence, Price, Size, LastSequence
-                    data_tuple = ((datetime.fromtimestamp(data['content'][j]['1']/1000)-timedelta(hours=self.hours)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], data['content'][j]['key'],
-                                  data['content'][j]['seq'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'],data['timestamp'])
+                    data_tuple = ((datetime.fromtimestamp(content['1']/1000)-timedelta(hours=self.hours)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
+                                  content['key'], content['seq'], content['2'], content['3'], content['4'],data['timestamp'])
                     self.data['time_sales_equity'].append(data_tuple)
 
             elif data['service'] == 'CHART_EQUITY':
                 for j in range(0, len(data['content'])):
-
+                    content = data['content'][j]
                     #DateTime, Ticker, Sequence, open_price, high, low ,close_price, volume, LastSequence, ChartDay
-                    data_tuple = ((datetime.fromtimestamp(data['content'][j]['7']/1000))-timedelta(hours=self.hours), data['content'][j]['key'], data['content'][j]['seq'],
-                                  data['content'][j]['1'], data['content'][j]['2'], data['content'][j]['3'], data['content'][j]['4'],
-                                  data['content'][j]['5'], data['content'][j]['6'], data['content'][j]['8'])
+                    data_tuple = ((datetime.fromtimestamp(content['7']/1000))-timedelta(hours=self.hours),
+                                  content['key'], content['seq'], content['1'], content['2'], content['3'],
+                                  content['4'], content['5'], content['6'], content['8'])
 
                     self.data['chart_equity'].append(data_tuple)
 
             elif data['service'] == 'NASDAQ_BOOK':
 
                 for j in range(0, len(data['content'])):    #run between tickets
+                    content = data['content'][j]
+# =============================================================================
+#                     data_tuple = (data['service'], data['timestamp'], content['key'], content)
+#                     self.data['level_2_nasdaq'].append(data_tuple)
+# =============================================================================
 
-                    for k in range(0, len(data['content'][j]['2'])):  # Run between Bids
+                    for k in range(0, len(content['2'])):  # Run between Bids
+                        content2 = content['2'][k]
 
-                        for t in range(0, len(data['content'][j]['2'][k]['3'])): #Run betwen orders
-
+                        for t in range(0, len(content2['3'])): #Run betwen orders
                             #DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Router, Size, ID, Message_Timestamp
-                            data_tuple = (((datetime.fromtimestamp(data['content'][j]['1']/1000))-timedelta(hours=self.hours)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], data['content'][j]['key'], 'Bid', data['content'][j]['2'][k]['0'],
-                                          data['content'][j]['2'][k]['1'], data['content'][j]['2'][k]['2'],data['content'][j]['2'][k]['3'][t]['0'],
-                                          data['content'][j]['2'][k]['3'][t]['1'], data['content'][j]['2'][k]['3'][t]['2'], data['timestamp'])
+                            data_tuple = (((datetime.fromtimestamp(content['1']/1000))-timedelta(hours=self.hours)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
+                                          content['key'], 'Bid', content2['0'], content2['1'], content2['2'],content2['3'][t]['0'],
+                                          content2['3'][t]['1'], content2['3'][t]['2'], data['timestamp'])
 
                             self.data['level_2_nasdaq'].append(data_tuple)
 
-                    for k in range(0, len(data['content'][j]['3'])):
-
-                        for t in range(0, len(data['content'][j]['3'][k]['3'])): #Run betwen orders
+                    for k in range(0, len(content['3'])):  # Run between asks
+                        content2 = content['3'][k]
+                        for t in range(0, len(content2['3'])): #Run betwen orders
 
                             #DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Router, Size, ID, Message_Timestamp
-                            data_tuple = (((datetime.fromtimestamp(data['content'][j]['1']/1000))-timedelta(hours=self.hours)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], data['content'][j]['key'], 'Ask', data['content'][j]['3'][k]['0'],
-                                          data['content'][j]['3'][k]['1'], data['content'][j]['3'][k]['2'],data['content'][j]['3'][k]['3'][t]['0'],
-                                          data['content'][j]['3'][k]['3'][t]['1'], data['content'][j]['3'][k]['3'][t]['2'], data['timestamp'])
+                            data_tuple = (((datetime.fromtimestamp(content['1']/1000))-timedelta(hours=self.hours)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
+                                          content['key'], 'Ask', content2['0'], content2['1'], content2['2'],content2['3'][t]['0'],
+                                          content2['3'][t]['1'], content2['3'][t]['2'], data['timestamp'])
 
                             self.data['level_2_nasdaq'].append(data_tuple)
-
 
             else: #Actives, Levelone, Quote, Option
                 for j in range(0, len(data['content'])):
+                    content = data['content'][j]
                     #service, timestamp, symbol, content
-                    data_tuple = (data['service'], data['timestamp'], data['content'][j]['key'], json.dumps(data['content'][j]))
+                    #print(data['content'][j])
+                    #data_tuple = (data['service'], data['timestamp'], content['key'], json.dumps(content))
+                    data_tuple = (data['service'], data['timestamp'], content['key'], content)
 
                     self.data['subscription_data'].append(data_tuple)
 
@@ -474,8 +486,6 @@ class TDStreamerClient():
                                                target=callback(data['service']),
                                                daemon = True)
             callback_thread.start()
-            #print('announcing change')
-            #callback(data['service'])
 
 
     def _cache_store(self):
@@ -485,7 +495,7 @@ class TDStreamerClient():
             # WatchDog to check if connection is still alive
             if (datetime.now() - self.last_message_time).seconds > 12:
                 #send Request so if connection is down it will rise an excemtion (on_close) that will run keep_alive
-                self.data_request_account_activity()
+                #self.data_request_account_activity()
                 self.QOS_request(qoslevel = '0')
                 time.sleep(self.sleep)
 
