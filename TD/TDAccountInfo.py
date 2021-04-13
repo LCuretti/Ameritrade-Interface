@@ -27,12 +27,17 @@ class TDAccInf():
         self.method = method
         self.account_id = account_id
         self.TDAPI = TDAPI
-        self.initializing = True
 
         #Set time difference between local time and Eastern Standard Time
         self.deltaHours = round(((datetime.now().replace(tzinfo=None) - datetime.now(timezone('EST')).replace(tzinfo=None))).seconds/3600, 0)
         self.today = (datetime.today()-timedelta(hours=self.deltaHours)).strftime('%Y-%m-%d')
 
+        self.initialization()
+
+
+
+    def initialization(self):
+        self.initializing = True
         #Positions
         self.init_positions()
 
@@ -43,6 +48,7 @@ class TDAccInf():
 
         #Balances
         self.balances_udpate()
+
 
     def __repr__(self):
         '''
@@ -64,14 +70,14 @@ class TDAccInf():
 
             self.add_position(position)
 
-    def todayOrdersToTransaction(self, symbol):
-        # falta tener en cuenta las orden que abrieron y cerraron y no dejaron inguna posicion. Ver como mostralas
+    def todayOrdersToTransactions(self, symbol):
+        # Still missing to take in account if position got open and close during day. How to show them.
         todayTransactions = []
 
         for order in self.todayOrders:
 
             if order['orderLegCollection'][0]['instrument']['symbol'] == symbol:
-
+                # Check for filled or queued orders that may got partially filled today thus those transaction don't appear in historic transactions
                 if (order['status'] == 'FILLED') or (order['status'] == 'QUEUED' and order['filledQuantity'] > 0):
 
                     for subOrder in order['orderActivityCollection']:
@@ -136,6 +142,7 @@ class TDAccInf():
 
                                 todayTransactions.append(todayTransaction)
 
+        #To properlly sort the transactions
         def get_date(todayTransaction)  :
             return todayTransaction.get('transactionDate')
 
@@ -178,7 +185,7 @@ class TDAccInf():
         self.positions[symbol]['rawPosition'] = position
 
         # Get lastes trades on the position, to create transaction list since position was 0
-        trades = self.todayOrdersToTransaction(symbol)
+        trades = self.todayOrdersToTransactions(symbol)
 
         self.positions[symbol]['trades'] = self.TDAPI.get_transactions(account = self.account_id, transaction_type = 'TRADE', symbol = symbol)
 
@@ -213,8 +220,8 @@ class TDAccInf():
             else:
                 #pass
                 # print "Transaction #{} is a sell. SUBTRACTING FROM HOLDINGS ...".format(str(transactionNum))
-                self.removeFromHoldings_fifo(transaction,symbol)
-                self.removeFromHoldings_lifo(transaction,symbol)
+                self.removeFromHoldings_FIFO(transaction,symbol)
+                self.removeFromHoldings_LIFO(transaction,symbol)
 
         self.avgPrice(symbol)
         self.positions[symbol]['LIFO']['date'] = self.positions[symbol]['LIFO']['holdings'][0]['date']
@@ -255,7 +262,7 @@ class TDAccInf():
 
 
     # Remove Holdings
-    def removeFromHoldings_fifo(self, t, symbol):
+    def removeFromHoldings_FIFO(self, t, symbol):
 
         quantity = t['transactionItem']['amount']
         price = t['transactionItem']['price']
@@ -294,7 +301,7 @@ class TDAccInf():
         if not self.initializing:
             self.avgPrice(symbol)
 
-    def removeFromHoldings_lifo(self, t, symbol):
+    def removeFromHoldings_LIFO(self, t, symbol):
 
         quantity = t['transactionItem']['amount']
         price = t['transactionItem']['price']
@@ -351,7 +358,7 @@ class TDAccInf():
 
 
    # check the closing position orders to calculate target values
-    def closing_orders(self):  ### Falta para short
+    def closing_orders(self):
         queued_orders = self.TDAPI.get_orders_path(account = self.account_id, status = 'QUEUED')
         for order in queued_orders:
             if order['orderLegCollection'][0]['positionEffect'] == 'CLOSING':
