@@ -494,7 +494,6 @@ class TDStreamerClient():
         self.subscriptions[service]['keys-seq'][content['key']] = content['seq']
 
 
-
     def _watchDog(self):
         # Method that run in a separate thread and check if websocket connection is alive
         while self.IsLoggedIn:
@@ -517,20 +516,20 @@ class TDStreamerClient():
 
         if command == 'UNSUBS':
             for key in keys.split(', '):
-                if key in self.subscriptions[f'{service}']['keys-seq']:
-                    self.subscriptions[f'{service}']['keys-seq'].pop(key)
-                if len(self.subscriptions[f'{service}']['keys-seq']) == 0:
-                    self.subscriptions[f'{service}']['subscribed'] = False
+                if key in self.subscriptions[service]['keys-seq']:
+                    self.subscriptions[service]['keys-seq'].pop(key)
+                if len(self.subscriptions[service]['keys-seq']) == 0:
+                    self.subscriptions[service]['subscribed'] = False
 
         else:
-            self.subscriptions[f'{service}']['subscribed'] = True
-            self.subscriptions[f'{service}']['ID'] = ID
-            self.subscriptions[f'{service}']['fields'] = fields
+            self.subscriptions[service]['subscribed'] = True
+            self.subscriptions[service]['ID'] = ID
+            self.subscriptions[service]['fields'] = fields
 
             if  command == 'SUBS':
-                self.subscriptions[f'{service}']['keys-seq'] = {}
+                self.subscriptions[service]['keys-seq'] = {}
             for key in keys.split(', '):
-                self.subscriptions[f'{service}']['keys-seq'][key] = -1
+                self.subscriptions[service]['keys-seq'][key] = -1
 
 
     def _csv_open(self, service):
@@ -600,7 +599,6 @@ class TDStreamerClient():
         for service in self.subscriptions:
             if self.subscriptions[service]['CSVflag']:
                 self._csv_close(service)
-
 
 
     '''****************************************
