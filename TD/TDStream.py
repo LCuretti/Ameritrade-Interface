@@ -43,7 +43,7 @@ class TDStreamerClient():
     '''
          TD Ameritrade API Class.
 
-        Performs subscription request to the TD Ameritrade.
+        Performs subscriptions requests to the TD Ameritrade.
 
         id	service              	command        	     parameters	                                       	       fields	                  Response Type
         0	ADMIN	                LOGIN       	     credential, token, version			                                                  response
@@ -101,21 +101,42 @@ class TDStreamerClient():
         # default sleep behavior
         self.sleep = 2
 
-        # number of data pulls performed.
-        self.acctivity_data_count = 0
-        self.timesale_equity_count = 0
-        self.chart_equity_count = 0
-        self.nasdaq_book_count = 0
-        self.subscription_data_count = 0
+        self.subscriptions={}
+        self.subscriptions['ACCT_ACTIVITY'] = {'CSV_headers':'Service,Timestamp,Ticker,Sequence,Content\n'}
+        self.subscriptions['ACTIVES_NASDAQ'] = {'CSV_headers':'Service,Timestamp,Ticker,Content\n'}
+        self.subscriptions['ACTIVES_NYSE'] = {'CSV_headers':'Service,Timestamp,Ticker,Content\n'}
+        self.subscriptions['ACTIVES_OTCBB'] = {'CSV_headers':'Service,Timestamp,Ticker,Content\n'}
+        self.subscriptions['ACTIVES_OPTIONS'] = {'CSV_headers':'Service,Timestamp,Ticker,Content\n'}
+        self.subscriptions['CHART_EQUITY'] = {'CSV_headers':'DateTime,Ticker,Sequence,Open,High,Low,Close,Volume,LastSequence,ChartDay\n'}
+        self.subscriptions['CHART_FUTURES'] = {'CSV_headers':'Service,Timestamp,Ticker,Sequence,Content\n'}
+        self.subscriptions['CHART_OPTIONS'] = {'CSV_headers':'Service,Timestamp,Ticker,Sequence,Content\n'}
+        self.subscriptions['LEVELONE_FUTURES'] = {'CSV_headers':'Service,Timestamp,Ticker,Content\n'}
+        self.subscriptions['LEVELONE_FOREX'] = {'CSV_headers':'Service,Timestamp,Ticker,Content\n'}
+        self.subscriptions['LISTED_BOOK'] = {'CSV_headers':'Service,Timestamp,Ticker,Content\n'}
+        self.subscriptions['NASDAQ_BOOK'] = {'CSV_headers':'DateTime,Ticker,Bid/Ask,Price,Size,Num_Orders,Router,Order_Size,ID,Message_Timestamp\n'}
+        self.subscriptions['OPTIONS_BOOK'] = {'CSV_headers':'Service,Timestamp,Ticker,Content\n'}
+        self.subscriptions['NEWS_HEADLINE'] = {'CSV_headers':'Service,Timestamp,Ticker,Sequence,Content\n'}
+        self.subscriptions['OPTION'] = {'CSV_headers':'Service,Timestamp,Ticker,Content\n'}
+        self.subscriptions['QUOTE'] = {'CSV_headers':'Service,Timestamp,Ticker,Content\n'}
+        self.subscriptions['TIMESALE_EQUITY'] = {'CSV_headers':'DateTime,Ticker,Sequence,Price,Size,LastSequence,Message_Timestamp\n'}
+        self.subscriptions['TIMESALE_FUTURES'] = {'CSV_headers':'Service,Timestamp,Ticker,Sequence,Content\n'}
+        self.subscriptions['TIMESALE_OPTIONS'] = {'CSV_headers':'Service,Timestamp,Ticker,Sequence,Content\n'}
 
-        # Initalize a list that will house all the subscriptions made during the stream. If connection is loss, can pick up where we left off.
-        self.current_subscriptions = []
+        for service in self.subscriptions:
+            self.subscriptions[service]['subscribed'] = False
+            self.subscriptions[service]['CSVflag'] = False
+            self.subscriptions[service]['message_stored_count'] = 0
+            self.subscriptions[service]['data'] = []
+            self.subscriptions[service]['keys-seq'] = {}
+
 
         #Set time difference between local time and Eastern Standard Time
         self.hours = ((datetime.now().replace(tzinfo=None) - datetime.now(timezone('EST')).replace(tzinfo=None))).seconds/3600
 
         #Set saving method
+        self.cache_data = cache_data
         self.database_type = 'CSV'
+        self.segregation = True
 
         #Store observers callback functions
         self._observers = []
@@ -125,52 +146,39 @@ class TDStreamerClient():
         self.response_types['notify'] = []
         self.response_types['response'] = []
         self.response_types['snapshot'] = []
-        self.response_types['data'] = []
 
-        self.data = {}
-        self.data['account_activity'] = []
-        self.data['chart_equity'] = []
-        self.data['time_sales_equity'] = []
-        self.data['level_2_nasdaq'] = []
-        self.data['subscription_data'] = []
 
         # Create StreamData folder for CSV storadge if it does not exist
         # Be careful with this, it will make it in the folder the script is in.
-        if cache_data == True and not os.path.isdir('./StreamData'):
+        if cache_data and not os.path.isdir('./StreamData'):
             os.mkdir('StreamData')
 
         # Intialize the Client
         self.TDAPI = TDAPI
 
-        print("TDStream Initialized at: "+str(datetime.now()))
+        self.today = datetime.today()-timedelta(hours=self.hours)
+
+        print("TDStream Initialized at:".ljust(50)+str(datetime.now()))
 
     def __repr__(self):
         '''
             defines the string representation of our TD Ameritrade Class instance.
         '''
-
         # define the string representation
         return '<TD Streaming API - Connected = {}>'.format(self.IsLoggedIn)
-
 
     def bind_to(self, callback):
         print(f'{callback} bounded')
         self._observers.append(callback)
 
-
-
     def _grab_streaming_keys(self):
-
         if self.TDAPI:
-
             # Make request to User Principals endpoint to get streaming info, the connection URL and credential for LogIn.
             userPrincipalsResponse = self.TDAPI.get_user_principals(fields = ['streamerSubscriptionKeys', 'streamerConnectionInfo'])
-
             # Create timestamp, we need to get the timestamp in order to make our next request, but it needs to be parsed
             epoch = datetime.utcfromtimestamp(0)
             tokenTimeStamp = datetime.strptime(userPrincipalsResponse['streamerInfo']['tokenTimestamp'], "%Y-%m-%dT%H:%M:%S+0000")
             tokenTimeStampAsMs = (tokenTimeStamp - epoch).total_seconds() * 1000
-
             # we need to define our credentials that we will need to make our stream
             self.credentials = {"userid": userPrincipalsResponse['accounts'][0]['accountId'],
                                 "token": userPrincipalsResponse['streamerInfo']['token'],
@@ -183,152 +191,38 @@ class TDStreamerClient():
                                 "timestamp": int(tokenTimeStampAsMs),
                                 "appid": userPrincipalsResponse['streamerInfo']['appId'],
                                 "acl": userPrincipalsResponse['streamerInfo']['acl'] }
-
             # Grab the streamer key for ACCT_ACTIVITY method (Account activity subscription)
             self.streamerSubscriptionKey = userPrincipalsResponse['streamerSubscriptionKeys']['keys'][0]['key']
-
             # grab the URI
             self.uri = "wss://" + userPrincipalsResponse['streamerInfo']['streamerSocketUrl'] + "/ws"
 
-    def _csv_open(self):
-        #Prepare the CSV files an open them to store the data
-        self.today = datetime.today()-timedelta(hours=self.hours)
-        today = self.today.strftime('%Y-%m-%d')
+    def _keep_alive(self):
+        #Method that recover connection after it drop
 
-        if not os.path.isfile('./StreamData/Account_Activity_{}.csv'.format(today)):
-            #initial content
-            with open('./StreamData/Account_Activity_{}.csv'.format(today),'w') as f:
-                f.write('Service,Timestamp,Content\n') # TRAILING NEWLINE
+        print('Recovering connection')
+        internet = self._is_connected()
 
-        if not os.path.isfile('./StreamData/Chart_Equity_{}.csv'.format(today)):
-            #initial content
-            with open('./StreamData/Chart_Equity_{}.csv'.format(today),'w') as f:
-                f.write('DateTime,Ticker,Sequence,Open,High,Low,Close,Volume,LastSequence,ChartDay\n') # TRAILING NEWLINE
+        #Wait to have internet back in case this was the reson of the interruption
+        while not internet:
+            internet = self._is_connected()
+            time.sleep(self.sleep)
 
-        if not os.path.isfile('./StreamData/Timesales_Equity_{}.csv'.format(today)):
-            #initial content
-            with open('./StreamData/Timesales_Equity_{}.csv'.format(today),'w') as f:
-                f.write('DateTime,Ticker,Sequence,Price,Size,LastSequence,Message_Timestamp\n') # TRAILING NEWLINE
+        #Restart the streamer
+        self.connect()
 
-        if not os.path.isfile('./StreamData/Nasdaq_book_{}.csv'.format(today)):
-            #initial content
-            with open('./StreamData/Nasdaq_book_{}.csv'.format(today),'w') as f:
-                f.write('DateTime,Ticker,Bid/Ask,Price,Size,Num_Orders,Router,Order_Size,ID,Message_Timestamp\n') # TRAILING NEWLINE
+        #subscribe everything as it was before interruption
+        for service in self.subscriptions:
 
-        if not os.path.isfile('./StreamData/Subscription_Data_{}.csv'.format(today)):
-            #initial content
-            with open('./StreamData/Subscription_Data_{}.csv'.format(today),'w') as f:
-                f.write('Service,Timestamp,Ticker,Content\n') # TRAILING NEWLINE
+            if self.subscriptions[service]['subscribed']:
 
+                ID = self.subscriptions[service]['ID']
 
+                fields = self.subscriptions[service]['fields']
+                keys = ", ".join(list(self.subscriptions[service]['keys-seq'].keys()))
 
-        self.Account_Activity_csv = open('./StreamData/Account_Activity_{}.csv'.format(today),'a',newline='')
-        self.Chart_Equity_csv = open('./StreamData/Chart_Equity_{}.csv'.format(today),'a',newline='')
-        self.Timesales_Equity_csv = open('./StreamData/Timesales_Equity_{}.csv'.format(today),'a',newline='')
-        self.Nasdaq_book_csv = open('./StreamData/Nasdaq_book_{}.csv'.format(today),'a',newline='')
-        self.Subscription_Data_csv = open('./StreamData/Subscription_Data_{}.csv'.format(today),'a',newline='')
+                subs_request = [service, ID, 'SUBS', keys, fields]
 
-
-        self.Account_Activity_writer = csv.writer(self.Account_Activity_csv)
-        self.Chart_Equity_writer = csv.writer(self.Chart_Equity_csv)
-        self.Timesales_Equity_writer = csv.writer(self.Timesales_Equity_csv)
-        self.Nasdaq_book_writer = csv.writer(self.Nasdaq_book_csv)
-        self.Subscription_Data_writer = csv.writer(self.Subscription_Data_csv)
-
-
-    def _csv_close(self):
-        #close CSV files when connection drops or logoff
-        self.Account_Activity_csv.close()
-        self.Chart_Equity_csv.close()
-        self.Timesales_Equity_csv.close()
-        self.Nasdaq_book_csv.close()
-        self.Subscription_Data_csv.close()
-
-
-    def _handle_response_response(self, content = None):
-        #the first response is the login answer, if it ok set the LoggedIn to True
-        if (content['response'][0]['command'] == 'LOGIN') and (content['response'][0]['content']['code'] == 0):
-            self.IsLoggedIn = True
-            ##self.UserLogoff = False
-            print("Logged in at: "+ str(datetime.fromtimestamp(int(content['response'][0]['timestamp'])/1000))[:-3])
-
-            # Initalize data storage protocol.
-            if self.database_type == 'CSV':
-                self._csv_open()
-
-            # Method that run in a separate thread and check if websocket connection is alive.  #### this part comes from response
-            self.cache_store_thread = Thread(name='cache_store_thread',
-                                target=self._cache_store,
-                                daemon = True)
-            self.cache_store_thread.start()
-
-        else:
-            print(str(content['response'][0]['service'])+" "+str(content['response'][0]['content']['msg'])+" at: " + str(datetime.fromtimestamp(int(content['response'][0]['timestamp'])/1000))[:-3])
-
-        self.response_types['response'].append(content)
-
-    def _handle_response_notify(self, content = None):
-       self.response_types['notify'].append(content)
-
-       if 'heartbeat' in content['notify'][0]:
-           print("Heartbeat at: "+ str(datetime.fromtimestamp(int(content['notify'][0]['heartbeat'])/1000))[:-3])
-
-       else:
-           print(content)
-
-    def _handle_response_snapshot(self, content = None):
-        # snapshot from Get services
-        self.response_types['snapshot'].append(content)
-
-    def _handle_response_data(self, content = None):
-        #self.response_types['data'].append(content)
-        self._data_segregation(content)
-
-    def _websocket_on_message(self, message):
-
-        # Handle the messages it receives
-        self.last_message_time = datetime.now()
-
-        # Load the message
-        message = json.loads(message, strict = False)
-
-        # Grab the Keys
-        msg_keys = message.keys()
-
-        # Handle the message appropriately
-        if 'notify' in msg_keys:
-            self._handle_response_notify(content = message)
-        elif 'response' in msg_keys:
-            self._handle_response_response(content = message)
-        elif 'snapshot' in msg_keys:
-            self._handle_response_snapshot(content = message)
-        elif 'data' in msg_keys:
-            self._handle_response_data(content = message)
-
-    def _websocket_on_open(self):
-
-        # When connection is open send the logging request
-        self.login_request()
-
-    def _websocket_on_error(self, error):
-
-        error_str = str(error)
-
-        print('Error:')
-        print('-'*40)
-        print(error_str)
-
-    def _websocket_on_close(self):
-
-        # No longer Logged In
-        self.IsLoggedIn = False
-
-        print('Websocket is Closed.')
-        print('-'*40)
-        print('Time Closed: {}'.format(datetime.now()))
-
-        if not self.UserLogoff: #if user logged off
-            self._keep_alive()
+                self.subs_request(subs_request)
 
     def _is_connected(self):
         # check internet connectivity
@@ -341,25 +235,6 @@ class TDStreamerClient():
             pass
         return False
 
-    def _keep_alive(self):
-        #Method that recover connection after it drop
-
-        print('Recovering connection')
-        internet = self._is_connected()
-
-        #Wait to have internet back in case this was the reson of teh interruption
-        while not internet:
-            internet = self._is_connected()
-            time.sleep(self.sleep)
-
-        #Restart the streamer
-        self.connect()
-
-        #subscribe all subscription as before the interruption
-        subscriptions = self.current_subscriptions
-        self.current_subscriptions = [] ## to avoid duplicate the subscription in the list
-        for subs in subscriptions:
-            self.subs_request(subs)
 
     def connect(self):
 
@@ -391,7 +266,6 @@ class TDStreamerClient():
             # Start the thread.
             self.td_websocket_thread.start()
 
-
             t = 0
             while not self.IsLoggedIn:
                 time.sleep(self.sleep)
@@ -403,170 +277,331 @@ class TDStreamerClient():
         else:
             print("Streamer already started")
 
+
+    def _websocket_on_open(self):
+
+        # When connection is open send the logging request
+        self.login_request()
+
+    def _websocket_on_error(self, error):
+
+        error_str = str(error)
+
+        print('Error:')
+        print('-'*40)
+        print(error_str)
+
+    def _websocket_on_close(self):
+
+        # No longer Logged In
+        self.IsLoggedIn = False
+
+        print('Websocket is Closed.')
+        print('-'*40)
+        print('Time Closed:'.ljust(50)+str(datetime.now()))
+
+        if not self.UserLogoff: #if user logged off
+            self._keep_alive()
+
+    def _websocket_on_message(self, message):
+
+        # Handle the messages it receives
+        self.last_message_time = datetime.now()
+
+        # Load the message
+        message = json.loads(message, strict = False)
+
+        # Grab the Keys
+        msg_keys = message.keys()
+
+        # Handle the message appropriately
+        if 'notify' in msg_keys:
+            self._handle_response_notify(content = message)
+        elif 'response' in msg_keys:
+            self._handle_response_response(content = message)
+        elif 'snapshot' in msg_keys:
+            self._handle_response_snapshot(content = message)
+        elif 'data' in msg_keys:
+            self._handle_response_data(content = message)
+
+
+    def _handle_response_response(self, content = None):
+        #the first response is the login answer, if it ok set the LoggedIn to True
+        if (content['response'][0]['command'] == 'LOGIN') and (content['response'][0]['content']['code'] == 0):
+            self.IsLoggedIn = True
+            ##self.UserLogoff = False
+            print("Logged in at:".ljust(50) + str(datetime.fromtimestamp(int(content['response'][0]['timestamp'])/1000))[:-3])
+
+            # Method that run in a separate thread and check if websocket connection is alive.  #### this part comes from response
+            self.watchDog_thread = Thread(name='watchDog_thread',
+                                target=self._watchDog,
+                                daemon = True)
+            self.watchDog_thread.start()
+            if self.cache_data:
+                self.cache_store_thread = Thread(name='cache_store_thread',
+                                    target=self._cache_store,
+                                    daemon = True)
+                self.cache_store_thread.start()
+
+        elif content['response'][0]['command'] == 'QOS':
+            response = str(str(content['response'][0]['service'])+" "+str(content['response'][0]['content']['msg'])+" at:")
+            print(response.ljust(50) + str(datetime.fromtimestamp(int(content['response'][0]['timestamp'])/1000))[:-3])
+            self.ping = datetime.now() - self.preping
+            print ("Ping = " + str(self.ping.microseconds/1000) + "ms")
+        else:
+            response = str(str(content['response'][0]['service'])+" "+str(content['response'][0]['content']['msg'])+" at:")
+            print(response.ljust(50) + str(datetime.fromtimestamp(int(content['response'][0]['timestamp'])/1000))[:-3])
+
+
+        self.response_types['response'].append(content)
+
+    def _handle_response_notify(self, content = None):
+       self.response_types['notify'].append(content)
+
+       if 'heartbeat' in content['notify'][0]:
+           print("Heartbeat at:".ljust(50) + str(datetime.fromtimestamp(int(content['notify'][0]['heartbeat'])/1000))[:-3])
+
+       else:
+           print(content)
+
+    def _handle_response_snapshot(self, content = None):
+        # snapshot from Get services
+        self.response_types['snapshot'].append(content)
+
+    def _handle_response_data(self, content = None):
+        self._data_segregation(content)
+
+
     def _data_segregation(self,message):
         ''' The part below segregate data on specifics tables with time adjusted (3600), and whatever left get stored in a single Table '''
 
-        for i in range(0,len(message['data'])):
-            data = message['data'][i]
+        if self.segregation:
+            for i in range(0,len(message['data'])):
+                data = message['data'][i]
 
-            if data['service'] == 'ACCT_ACTIVITY':
-                for j in range(0, len(data['content'])):
-                    content = data['content'][j]
-                    #service, timestamp, seq, key, account#, MessageType, Content
-                    if content['2'] != 'SUBSCRIBED' and content['2'] != 'ERROR':
-                        data_tuple = (data['service'], data['timestamp'], content['seq'], content['key'], content['1'], content['2'],
-                                      xmltodict.parse(content['3'])[str(content['2']+"Message")])
-                    else:
-                        data_tuple = (data['service'], data['timestamp'], content['seq'], content['2'])
-                    #data_tuple = (data['service'], data['timestamp'], json.dumps(data['content'][j]))
-                    self.data['account_activity'].append(data_tuple)
+                if data['service'] == 'ACCT_ACTIVITY':
+                    for j in range(0, len(data['content'])):
+                        content = data['content'][j]
+                        #service, timestamp, seq, key, account#, MessageType, Content
+                        if content['2'] != 'SUBSCRIBED' and content['2'] != 'ERROR':
+                            data_tuple = (data['service'], data['timestamp'], content['key'], content['seq'], content['2'],
+                                          content['1'], xmltodict.parse(content['3'])[str(content['2']+"Message")])
+                        else:
+                            data_tuple = (data['service'], data['timestamp'], content['key'], content['seq'], content['2'])
+                        #data_tuple = (data['service'], data['timestamp'], json.dumps(data['content'][j]))
+                        self.subscriptions[data['service']]['data'].append(data_tuple)
+                        self._seq_test(data['service'],content)
 
-            elif data['service'] == 'TIMESALE_EQUITY':
-                for j in range(0, len(data['content'])):
-                    content = data['content'][j]
-                    #DateTime, Ticker, Sequence, Price, Size, LastSequence
-                    data_tuple = ((datetime.fromtimestamp(content['1']/1000)-timedelta(hours=self.hours)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
-                                  content['key'], content['seq'], content['2'], content['3'], content['4'],data['timestamp'])
-                    self.data['time_sales_equity'].append(data_tuple)
+                elif data['service'] == 'TIMESALE_EQUITY':
+                    for j in range(0, len(data['content'])):
+                        content = data['content'][j]
+                        #DateTime, Ticker, Sequence, Price, Size, LastSequence
+                        data_tuple = ((datetime.fromtimestamp(content['1']/1000)-timedelta(hours=self.hours)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
+                                      content['key'], content['seq'], content['2'], content['3'], content['4'],data['timestamp'])
 
-            elif data['service'] == 'CHART_EQUITY':
-                for j in range(0, len(data['content'])):
-                    content = data['content'][j]
-                    #DateTime, Ticker, Sequence, open_price, high, low ,close_price, volume, LastSequence, ChartDay
-                    data_tuple = ((datetime.fromtimestamp(content['7']/1000))-timedelta(hours=self.hours),
-                                  content['key'], content['seq'], content['1'], content['2'], content['3'],
-                                  content['4'], content['5'], content['6'], content['8'])
+                        self.subscriptions[data['service']]['data'].append(data_tuple)
+                        self._seq_test(data['service'],content)
 
-                    self.data['chart_equity'].append(data_tuple)
+                elif data['service'] == 'CHART_EQUITY':
+                    for j in range(0, len(data['content'])):
+                        content = data['content'][j]
+                        #DateTime, Ticker, Sequence, open_price, high, low ,close_price, volume, LastSequence, ChartDay
+                        data_tuple = ((datetime.fromtimestamp(content['7']/1000))-timedelta(hours=self.hours),
+                                      content['key'], content['seq'], content['1'], content['2'], content['3'],
+                                      content['4'], content['5'], content['6'], content['8'],data['timestamp'])
 
-            elif data['service'] == 'NASDAQ_BOOK':
+                        self.subscriptions[data['service']]['data'].append(data_tuple)
+                        self._seq_test(data['service'],content)
 
-                for j in range(0, len(data['content'])):    #run between tickets
-                    content = data['content'][j]
-# =============================================================================
-#                     data_tuple = (data['service'], data['timestamp'], content['key'], content)
-#                     self.data['level_2_nasdaq'].append(data_tuple)
-# =============================================================================
+                elif data['service'] == 'NASDAQ_BOOK':
 
-                    for k in range(0, len(content['2'])):  # Run between Bids
-                        content2 = content['2'][k]
+                    for j in range(0, len(data['content'])):    #run between tickets
+                        content = data['content'][j]
 
-                        for t in range(0, len(content2['3'])): #Run betwen orders
-                            #DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Router, Size, ID, Message_Timestamp
-                            data_tuple = (((datetime.fromtimestamp(content['1']/1000))-timedelta(hours=self.hours)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
-                                          content['key'], 'Bid', content2['0'], content2['1'], content2['2'],content2['3'][t]['0'],
-                                          content2['3'][t]['1'], content2['3'][t]['2'], data['timestamp'])
+                        for k in range(0, len(content['2'])):  # Run between Bids
+                            content2 = content['2'][k]
+                            for t in range(0, len(content2['3'])): #Run betwen orders
 
-                            self.data['level_2_nasdaq'].append(data_tuple)
+                                content3 = content2['3'][t]
+                                #DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Router, Size, ID, Message_Timestamp
+                                data_tuple = (((datetime.fromtimestamp(content['1']/1000))-timedelta(hours=self.hours)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
+                                              content['key'], 'Bid', content2['0'], content2['1'], content2['2'],content3['0'],
+                                              content3['1'], content3['2'], data['timestamp'])
 
-                    for k in range(0, len(content['3'])):  # Run between asks
-                        content2 = content['3'][k]
-                        for t in range(0, len(content2['3'])): #Run betwen orders
+                                #self.data['level_2_nasdaq'].append(data_tuple)
+                                self.subscriptions[data['service']]['data'].append(data_tuple)
 
-                            #DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Router, Size, ID, Message_Timestamp
-                            data_tuple = (((datetime.fromtimestamp(content['1']/1000))-timedelta(hours=self.hours)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
-                                          content['key'], 'Ask', content2['0'], content2['1'], content2['2'],content2['3'][t]['0'],
-                                          content2['3'][t]['1'], content2['3'][t]['2'], data['timestamp'])
+                        for k in range(0, len(content['3'])):  # Run between asks
+                            content2 = content['3'][k]
+                            for t in range(0, len(content2['3'])): #Run betwen orders
+                                content3 = content2['3'][t]
+                                #DateTime, Ticker, [Bid/Ask], Price, Size, Num_Orders, Router, Size, ID, Message_Timestamp
+                                data_tuple = (((datetime.fromtimestamp(content['1']/1000))-timedelta(hours=self.hours)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
+                                              content['key'], 'Ask', content2['0'], content2['1'], content2['2'],content3['0'],
+                                              content3['1'], content3['2'], data['timestamp'])
 
-                            self.data['level_2_nasdaq'].append(data_tuple)
+                                #self.data['level_2_nasdaq'].append(data_tuple)
+                                self.subscriptions[data['service']]['data'].append(data_tuple)
 
-            else: #Actives, Levelone, Quote, Option
-                for j in range(0, len(data['content'])):
-                    content = data['content'][j]
-                    #service, timestamp, symbol, content
-                    #print(data['content'][j])
-                    #data_tuple = (data['service'], data['timestamp'], content['key'], json.dumps(content))
-                    data_tuple = (data['service'], data['timestamp'], content['key'], content)
+                else: #Actives, Levelone, Quote, Option
+                    self._noseg(data)
 
-                    self.data['subscription_data'].append(data_tuple)
+        else: #If no segregation
+            for i in range(0,len(message['data'])):
+                data = message['data'][i]
+                self._noseg(data)
 
+        self.callBack()
+
+
+    def _noseg(self, data):
+        for j in range(0, len(data['content'])):
+            content = data['content'][j]
+            msg_keys = content.keys()
+            if 'seq' in msg_keys:
+                data_tuple = (data['service'], data['timestamp'], content['key'], content['seq'], content)
+                self._seq_test(data['service'],content)
+
+            else:
+                #service, timestamp, symbol, content
+                data_tuple = (data['service'], data['timestamp'], content['key'], content)
+
+            self.subscriptions[data['service']]['data'].append(data_tuple)
+
+    def callBack(self,message=None):
         #Triggers external function/method stored in observers list in a independed thread to be detached from wahtever loop it may have.
         for callback in self._observers:
             callback_thread = Thread(name='callback_thread',
-                                               target=callback(data['service']),
+                                               target=callback(message),
                                                daemon = True)
             callback_thread.start()
 
+    def _seq_test(self,service,content):
 
-    def _cache_store(self):
-        # Method that run in a separate thread and check if websocket connection is alive and segregate data in list and store it in CSV.
+        if self.subscriptions[service]['keys-seq'][content['key']] + 1 != content['seq']:
+            if self.subscriptions[service]['keys-seq'][content['key']] != -1:
+                if service == 'ACCT_ACTIVITY':
+                    # check for sequence inconsistency in Account acctivy that mnay lead in a
+                    # bad interpretation if so callback to reread all account stats
+                    print('Account activity seq problem, reset positions.')
+                    self.callBack('MISS SEQUENCE')
+                else:
+                    # If for any reasson a sequence was lost y test ping and send a ACCT_ACTIVITY to see if we also lost
+                    # a seq in activity that may lead in bad position or orders asumptions
+                    self.QOS_request(qoslevel = '0')
+                    self.data_request_account_activity()
+                    print('Miss sequence')
+        self.subscriptions[service]['keys-seq'][content['key']] = content['seq']
+
+
+
+    def _watchDog(self):
+        # Method that run in a separate thread and check if websocket connection is alive
         while self.IsLoggedIn:
+            Delta = 12 - (datetime.now() - self.last_message_time).seconds
             #print('alive')
             # WatchDog to check if connection is still alive
-            if (datetime.now() - self.last_message_time).seconds > 12:
+            if Delta < 0:
                 #send Request so if connection is down it will rise an excemtion (on_close) that will run keep_alive
-                #self.data_request_account_activity()
                 self.QOS_request(qoslevel = '0')
-                time.sleep(self.sleep)
+                Delta = 1
+            time.sleep(Delta)
 
-            ####################################################
+    def _subs_manage(self, subscription):
+
+        service = subscription[0]
+        ID = subscription[1]
+        command = subscription[2]
+        keys = subscription[3]
+        fields = subscription[4]
+
+        if command == 'UNSUBS':
+            for key in keys.split(', '):
+                if key in self.subscriptions[f'{service}']['keys-seq']:
+                    self.subscriptions[f'{service}']['keys-seq'].pop(key)
+                if len(self.subscriptions[f'{service}']['keys-seq']) == 0:
+                    self.subscriptions[f'{service}']['subscribed'] = False
+
+        else:
+            self.subscriptions[f'{service}']['subscribed'] = True
+            self.subscriptions[f'{service}']['ID'] = ID
+            self.subscriptions[f'{service}']['fields'] = fields
+
+            if  command == 'SUBS':
+                self.subscriptions[f'{service}']['keys-seq'] = {}
+            for key in keys.split(', '):
+                self.subscriptions[f'{service}']['keys-seq'][key] = -1
+
+
+    def _csv_open(self, service):
+
+        #Prepare the CSV files an open them to store the data
+        self.today = datetime.today()-timedelta(hours=self.hours)
+        today = self.today.strftime('%Y-%m-%d')
+
+
+        if not os.path.isfile(f'./StreamData/{service}_{today}.csv'):
+            #initial content
+
+            with open(f'./StreamData/{service}_{today}.csv','w') as f:
+                f.write(self.subscriptions[service]['CSV_headers']) # TRAILING NEWLINE
+
+        self.subscriptions[service]['CSV'] = open(f'./StreamData/{service}_{today}.csv','a',newline='')
+        self.subscriptions[service]['Writer'] = csv.writer(self.subscriptions[service]['CSV'])
+        self.subscriptions[service]['CSVflag'] = True
+
+
+    def _csv_close(self,service):
+        #close CSV files when connection drops or logoff
+        self.subscriptions[service]['CSVflag'] = False
+        self.subscriptions[service]['CSV'].close()
+
+    def _cache_store(self):
+
+        while self.IsLoggedIn:
+
+            #check if all subscriptions has an opened CSV, if not open it.
+            for service in self.subscriptions:
+                if self.subscriptions[service]['subscribed'] and not self.subscriptions[service]['CSVflag']:
+                    self._csv_open(service)
 
             # check if new day started, prepares new set of files
             if ((datetime.now()-timedelta(hours=self.hours)).day - self.today.day) > 0:
                 print("New day: Creating new set of CSVs")
-                self._csv_close()
-                self._csv_open()
 
-            #####################################################
+                for service in self.susbscriptions:
+                    if self.subscriptions[service]['CSVflag']:
+                        self._csv_close(service)
+                        self._csv_open(service)
 
             #For new data between datacount and subs data lenght, segregate and store
+            for service in self.subscriptions:
+                data_length = len(self.subscriptions[service]['data'])
 
-            account_activity_length = len(self.data['account_activity'])
-            time_sales_equity_length = len(self.data['time_sales_equity'])
-            chart_equity_length = len(self.data['chart_equity'])
-            level_2_nasdaq_length = len(self.data['level_2_nasdaq'])
-            subscription_data_length = len(self.data['subscription_data'])
+                if self.subscriptions[service]['message_stored_count'] < data_length:
+                    new = data_length - self.subscriptions[service]['message_stored_count']
+                    newData = self.subscriptions[service]['data'][-new:]
 
-            if self.acctivity_data_count < account_activity_length:
-                new = account_activity_length - self.acctivity_data_count
-                newActivities = self.data['account_activity'][-new:]
+                    for data in newData:
+                        self.subscriptions[service]['Writer'].writerow(data)
 
-                for activity in newActivities:
-                    self.Account_Activity_writer.writerow(activity)
+                    self.subscriptions[service]['message_stored_count'] = data_length
 
-                self.acctivity_data_count += new
-
-            if self.timesale_equity_count < time_sales_equity_length:
-                new = time_sales_equity_length - self.timesale_equity_count
-                newActivities = self.data['time_sales_equity'][-new:]
-
-                for activity in newActivities:
-                    self.Timesales_Equity_writer.writerow(activity)
-
-                self.timesale_equity_count += new
-
-            if self.chart_equity_count < chart_equity_length:
-                new = chart_equity_length - self.chart_equity_count
-                newActivities = self.data['chart_equity'][-new:]
-
-                for activity in newActivities:
-                    self.Chart_Equity_writer.writerow(activity)
-
-                self.chart_equity_count += new
-
-            if self.nasdaq_book_count < level_2_nasdaq_length:
-                new = level_2_nasdaq_length - self.nasdaq_book_count
-                newActivities = self.data['level_2_nasdaq'][-new:]
-
-                for activity in newActivities:
-                    self.Nasdaq_book_writer.writerow(activity)
-
-                self.nasdaq_book_count += new
-
-            if self.subscription_data_count < subscription_data_length:
-                new = subscription_data_length - self.subscription_data_count
-                newActivities = self.data['subscription_data'][-new:]
-
-                for activity in newActivities:
-                    self.Subscription_Data_writer.writerow(activity)
-
-                self.subscription_data_count += new
+            #check if all opened CSV has an active susbscription, if not close it.
+            for service in self.subscriptions:
+                if self.subscriptions[service]['CSVflag'] and not self.subscriptions[service]['subscribed']:
+                    self._csv_close(service)
 
             #if no new data, sleep
             else:
                 time.sleep(1)
 
-        self._csv_close()
+        #Close all CSV
+        for service in self.subscriptions:
+            if self.subscriptions[service]['CSVflag']:
+                self._csv_close(service)
+
+
 
     '''****************************************
     ********** Request Methods ****************
@@ -595,7 +630,7 @@ class TDStreamerClient():
     def logout_request(self):
 
         '''
-            Logout closes the WebSocket Session and cleans up all subscription for the client session.
+            Logout closes the WebSocket Session and cleans up all subscriptions for the client session.
             It’s a good practice to logout when closing the client tool.
         '''
         self.UserLogoff = True
@@ -603,7 +638,11 @@ class TDStreamerClient():
         if self.IsLoggedIn == True:
 
             self.IsLoggedIn = False
-            self.current_subscriptions = []
+
+            for service in self.subscriptions:
+                self.subscriptions[service]['subscribed'] = False
+                self.subscriptions[service]['keys-seq'] = {}
+
 
             logout_request = {"requests": [{"service": "ADMIN",
                                            "requestid": "1",
@@ -636,13 +675,13 @@ class TDStreamerClient():
                                        "account": self.credentials['userid'],
                                        "source": self.credentials['appid'],
                                        "parameters": {"qoslevel": qoslevel}}]}
-
+        self.preping = datetime.now()
         self.td_websocket.send(json.dumps(QOS_request))
 
     def subs_request(self, subscription):
         #Method for subscription handler
 
-        self.current_subscriptions = self.current_subscriptions + [subscription]
+        self._subs_manage(subscription)
 
         subs_request= {
                         "requests": [
@@ -676,7 +715,7 @@ class TDStreamerClient():
     ********* GET Requests ******************
     ***************************************'''
 
-    def data_request_news_headlinelist(self, keys = 'SPY'):
+    def data_request_news_headlinelist(self, keys = 'SPY, AAPL'):
 
         '''
 
@@ -833,9 +872,6 @@ class TDStreamerClient():
         self.data_request(data_request)
 
 
-
-
-
     '''********************************************
     ********** SUBSCRIPTION REQUESTS **************
     ********************************************'''
@@ -853,10 +889,12 @@ class TDStreamerClient():
             TYPE: String
 
             NAME: fields
-            DESC: select streaming fields.:
-                                          0 = Subscription Key
-                                          1 = Account #
-                                          2 = Message Type
+            DESC: select streaming fields.: Field   Field Name          Type        Field Description
+                                            key     Subscription Key    str         Subscription Key
+                                            seq     Sequence            int         Ticker sequence number
+                                            1       Account #           str         Account Number
+                                            2       Message Type        str         Message Type
+                                            3       Acttivity (xml)     str         Acttivity detail in XML format
             TYPE: String
 
             EXAMPLES:
@@ -1032,7 +1070,7 @@ class TDStreamerClient():
         self.subs_request(subs_request)
 
 
-    def data_request_chart_equity(self, command = "SUBS", keys = 'SPY', fields = '0,1,2,3,4,5,6,7,8'):
+    def data_request_chart_equity(self, command = "SUBS", keys = 'SPY, AAPL', fields = '0,1,2,3,4,5,6,7,8'):
 
         '''
             Chart provides  streaming one minute OHLCV (Open/High/Low/Close/Volume) for a one minute period .
@@ -1051,7 +1089,8 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Field   Field Name          Type        Field Description
-                                            0       Subscription Key    String      Ticker symbol in upper case
+                                            key     Subscription Key    String      Ticker symbol in upper case
+                                            seq     Sequence            int         Ticker sequence number
                                             1       Open Price          double      Opening price for the minute
                                             2       High Price          double      Highest price for the minute
                                             3       Low Price           double      Chart’s lowest price for the minute
@@ -1063,7 +1102,7 @@ class TDStreamerClient():
             TYPE: String
 
             EXAMPLES:
-            SessionObject.data_request_chart_equity(command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4,5,6,7,8')
+            SessionObject.data_request_chart_equity(command = "SUBS", keys = 'SPY, AAPL', fields = '0,1,2,3,4,5,6,7,8')
         '''
 
         subs_request = ["CHART_EQUITY", "8", command, keys, fields]
@@ -1090,7 +1129,7 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Field   Field Name          Type        Field Description
-                                            0       Subscription Key    String      Ticker symbol in upper case
+                                            key     Subscription Key    String      Ticker symbol in upper case
                                             1       ChartTime           long        Milliseconds since Epoch
                                             2       Open Price          double      Opening price for the minute
                                             3       High Price          double      Highest price for the minute
@@ -1126,7 +1165,8 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Field   Field Name          Type        Field Description
-                                            0       Subscription Key    String      Ticker symbol in upper case
+                                            key     Subscription Key    String      Ticker symbol in upper case
+                                            seq     Sequence            int         Ticker sequence number
                                             1       ChartTime           long        Milliseconds since Epoch
                                             2       Open Price          double      Opening price for the minute
                                             3       High Price          double      Highest price for the minute
@@ -1136,14 +1176,14 @@ class TDStreamerClient():
             TYPE: String
 
             EXAMPLES:
-            SessionObject.data_request_chart_options(command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4,5,6')
+            SessionObject.data_request_chart_options(command = "SUBS", keys = 'SPY_112219C300', fields = '0,1,2,3,4,5,6')
         '''
 
         subs_request = ["CHART_OPTIONS", "10", command, keys, fields]
 
         self.subs_request(subs_request)
 
-    def data_request_quote(self, command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,22,23,24,25,26,27,28,29,30,31,32,33,34,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52'):
+    def data_request_quote(self, command = "SUBS", keys = 'SPY, AAPL', fields = '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,22,23,24,25,26,27,28,29,30,31,32,33,34,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52'):
 
         '''
             Listed (NYSE, AMEX, Pacific Quotes and Trades)
@@ -1166,16 +1206,16 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Fields	Field Name                       Type	   Field Description
-                                            0	      Symbol	                     String	   Ticker symbol in upper case.
-                                            1	      Bid Price	                     float	   Current Best Bid Price
-                                            2	      Ask Price	                     float	   Current Best Ask Price
-                                            3	      Last Price	                 float	   Price at which the last trade was matched
-                                            4	      Bid Size	                     float	   Number of shares for bid
-                                            5	      Ask Size	                     float	   Number of shares for ask
-                                            6	      Ask ID	                     char	   Exchange with the best ask
-                                            7	      Bid ID	                     char	   Exchange with the best bid
-                                            8	      Total Volume	                 long	   Aggregated shares traded throughout the day, including pre/post market hours.
-                                            9	      Last Size	                     float	   Number of shares traded with last trade
+                                            key	     Symbol	                         String	   Ticker symbol in upper case.
+                                            1	     Bid Price	                     float	   Current Best Bid Price
+                                            2	     Ask Price	                     float	   Current Best Ask Price
+                                            3	     Last Price	                     float	   Price at which the last trade was matched
+                                            4	     Bid Size	                     float	   Number of shares for bid
+                                            5	     Ask Size	                     float	   Number of shares for ask
+                                            6	     Ask ID	                         char	   Exchange with the best ask
+                                            7	     Bid ID	                         char	   Exchange with the best bid
+                                            8	     Total Volume	                 long	   Aggregated shares traded throughout the day, including pre/post market hours.
+                                            9	     Last Size	                     float	   Number of shares traded with last trade
                                             10	     Trade Time	                     int	   Trade time of the last trade
                                             11	     Quote Time	                     int	   Trade time of the last quote
                                             12	     High Price	                     float	   Day’s high trade price
@@ -1222,14 +1262,14 @@ class TDStreamerClient():
             TYPE: String
 
             EXAMPLES:
-            SessionObject.data_request_chart_quote(command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4,5,6')
+            SessionObject.data_request_chart_quote(command = "SUBS", keys = 'SPY, AAPL', fields = '0,1,2,3,4,5,6')
         '''
 
         subs_request = ["QUOTE", "11", command, keys, fields]
 
         self.subs_request(subs_request)
 
-    def data_request_option(self, command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,343,35,36,37,38,39,40,41'):
+    def data_request_option(self, keys, command = "SUBS", fields = '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,343,35,36,37,38,39,40,41'):
 
         '''
 
@@ -1247,7 +1287,7 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Field   Field Name          Type        Field Description
-                                            0	    Symbol            	String	Ticker symbol in upper case.
+                                            key	    Symbol            	String	Ticker symbol in upper case.
                                             1	    Description       	String	A company, index or fund name
                                             2	    Bid Price         	float	Current Best Bid Price
                                             3	    Ask Price         	float	Current Best Ask Price
@@ -1292,7 +1332,7 @@ class TDStreamerClient():
             TYPE: String
 
             EXAMPLES:
-            SessionObject.data_request_option(command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4,5,6,7,8,9,10')
+            SessionObject.data_request_option(command = "SUBS", keys = 'SPY_112219C300', fields = '0,1,2,3,4,5,6,7,8,9,10')
         '''
 
         subs_request = ["OPTION", "12", command, keys, fields]
@@ -1300,7 +1340,7 @@ class TDStreamerClient():
         self.subs_request(subs_request)
 
 
-    def data_request_listed_book(self, command = "SUBS", keys = 'AAPL', fields = '0,1,2,3'):
+    def data_request_listed_book(self, command = "SUBS", keys = 'SPY, AAPL', fields = '0,1,2,3'):
 
         '''
 
@@ -1317,21 +1357,21 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Field   Field Name          Type        Field Description
-                                            0       Symbol            	String	    Ticker symbol in upper case.
+                                            key     Symbol            	String	    Ticker symbol in upper case.
                                             1       Level2 Time         int         Level2 time in milliseconds since epoch
                                             2       Bid Book            list        List of Bid prices and theirs volumes
                                             3       Ask Book            list        List of Ask prices and theirs volumes
             TYPE: String
 
             EXAMPLES:
-            SessionObject.data_request_listed_book(command = "SUBS", keys = 'AAPL', fields = '0,1,2,3')
+            SessionObject.data_request_listed_book(command = "SUBS", keys = 'SPY, AAPL', fields = '0,1,2,3')
         '''
 
         subs_request = ["LISTED_BOOK", "13", command, keys, fields]
 
         self.subs_request(subs_request)
 
-    def data_request_nasdaq_book(self, command = "SUBS", keys = 'AAPL', fields = '0,1,2,3'):
+    def data_request_nasdaq_book(self, command = "SUBS", keys = 'SPY, AAPL', fields = '0,1,2,3'):
 
         '''
 
@@ -1348,7 +1388,7 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Field   Field Name          Type        Field Description
-                                            0       Symbol            	String	    Ticker symbol in upper case.
+                                            key     Symbol            	String	    Ticker symbol in upper case.
                                             1       Level2 Time         int         Level2 time in milliseconds since epoch
                                             2       Bid Book            list        List of Bid prices and theirs volumes
                                             3       Ask Book            list        List of Ask prices and theirs volumes
@@ -1356,14 +1396,14 @@ class TDStreamerClient():
             TYPE: String
 
             EXAMPLES:
-            SessionObject.data_request_nasdaq_book(command = "SUBS", keys = 'AAPL', fields = '0,1,2,3')
+            SessionObject.data_request_nasdaq_book(command = "SUBS", keys = 'SPY, AAPL', fields = '0,1,2,3')
         '''
 
         subs_request = ["NASDAQ_BOOK", "14", command, keys, fields]
 
         self.subs_request(subs_request)
 
-    def data_request_options_book(self, command = "SUBS", keys = 'AAPL', fields = '0,1,2,3'):
+    def data_request_options_book(self, keys, command = "SUBS", fields = '0,1,2,3'):
 
         '''
 
@@ -1380,7 +1420,7 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Field   Field Name          Type        Field Description
-                                            0       Symbol            	String	    Ticker symbol in upper case.
+                                            key     Symbol            	String	    Ticker symbol in upper case.
                                             1       Level2 Time         int         Level2 time in milliseconds since epoch
                                             2       Bid Book            list        List of Bid prices and theirs volumes
                                             3       Ask Book            list        List of Ask prices and theirs volumes
@@ -1388,7 +1428,7 @@ class TDStreamerClient():
             TYPE: String
 
             EXAMPLES:
-            SessionObject.data_request_options_book(command = "SUBS", keys = 'AAPL', fields = '0,1,2,3')
+            SessionObject.data_request_options_book(command = "SUBS", keys = 'SPY_112219C300', fields = '0,1,2,3')
         '''
 
 
@@ -1412,7 +1452,7 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Fields	  Field Name	              Type	    Field Description
-                                            0	      Symbol	                  String	Ticker symbol in upper case.
+                                            key	      Symbol	                  String	Ticker symbol in upper case.
                                             1	      Bid Price	                  double	Current Best Bid Price
                                             2	      Ask Price	                  double	Current Best Ask Price
                                             3	      Last Price	              double	Price at which the last trade was matched
@@ -1476,7 +1516,7 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Field   Field Name          Type        Field Description
-                                            0   	Symbol	            String	Ticker symbol in upper case.
+                                            key   	Symbol	            String	Ticker symbol in upper case.
                                             1   	Bid Price	        double	Current Best Bid Price
                                             2   	Ask Price          	double	Current Best Ask Price
                                             3   	Last Price         	double	Price at which the last trade was matched
@@ -1518,7 +1558,7 @@ class TDStreamerClient():
         self.subs_request(subs_request)
 
 
-    def data_request_timesale_equity(self, command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4'):
+    def data_request_timesale_equity(self, command = "SUBS", keys = 'SPY, AAPL', fields = '0,1,2,3,4'):
 
         '''
 
@@ -1535,16 +1575,17 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Field   Field Name          Type        Field Description
-                                            0       Symbol              String      Ticker symbol in upper case.
+                                            key     Symbol              String      Ticker symbol in upper case.
+                                            seq     Sequence            int         Ticker sequence number
                                             1       Trade Time          long        Trade time of the last trade in milliseconds since epoch
                                             2       Last Price          double      Price at which the last trade was matched
                                             3       Last Size           double      Number of shares traded with last trade
-                                            4       Las Sequence        long        Number of shares for bid
+                                            4       Last Sequence       long        Number of shares for bid
 
             TYPE: String
 
             EXAMPLES:
-            SessionObject.data_request_timesale_equity(command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4,5,6')
+            SessionObject.data_request_timesale_equity(command = "SUBS", keys = 'SPY, AAPL', fields = '0,1,2,3,4,5,6')
         '''
 
         subs_request = ["TIMESALE_EQUITY", "18", command, keys, fields]
@@ -1568,23 +1609,24 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Field   Field Name          Type        Field Description
-                                            0       Symbol              String      Ticker symbol in upper case.
+                                            key     Symbol              String      Ticker symbol in upper case.
+                                            seq     Sequence            int         Ticker sequence number
                                             1       Trade Time          long        Trade time of the last trade in milliseconds since epoch
                                             2       Last Price          double      Price at which the last trade was matched
                                             3       Last Size           double      Number of shares traded with last trade
-                                            4       Las Sequence        long        Number of shares for bid
+                                            4       Last Sequence       long        Number of shares for bid
 
             TYPE: String
 
             EXAMPLES:
-            SessionObject.data_request_timesale_futures(command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4,5,6')
+            SessionObject.data_request_timesale_futures(command = "SUBS", keys = '/ES', fields = '0,1,2,3,4,5,6')
         '''
 
         subs_request = ["TIMESALE_FUTURES", "19", command, keys, fields]
 
         self.subs_request(subs_request)
 
-    def data_request_timesale_options(self, command = "SUBS", keys = '/ES', fields = '0,1,2,3,4'):
+    def data_request_timesale_options(self, keys, command = "SUBS", fields = '0,1,2,3,4'):
 
         '''
 
@@ -1601,23 +1643,23 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Field   Field Name          Type        Field Description
-                                            0       Symbol              String      Ticker symbol in upper case.
+                                            key     Symbol              String      Ticker symbol in upper case.
                                             1       Trade Time          long        Trade time of the last trade in milliseconds since epoch
                                             2       Last Price          double      Price at which the last trade was matched
                                             3       Last Size           double      Number of shares traded with last trade
-                                            4       Las Sequence        long        Number of shares for bid
+                                            4       Last Sequence       long        Number of shares for bid
 
             TYPE: String
 
             EXAMPLES:
-            SessionObject.data_request_timesale_options(command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4,5,6')
+            SessionObject.data_request_timesale_options(command = "SUBS", keys = 'SPY_112219C300', fields = '0,1,2,3,4,5,6')
         '''
 
         subs_request = ["TIMESALE_OPTIONS", "20", command, keys, fields]
 
         self.subs_request(subs_request)
 
-    def data_request_news_headline(self, command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4,5,6,7,8,9,10'):
+    def data_request_news_headline(self, command = "SUBS", keys = 'SPY, AAPL', fields = '0,1,2,3,4,5,6,7,8,9,10'):
 
         '''
 
@@ -1634,7 +1676,7 @@ class TDStreamerClient():
 
             MAME: fields
             DESC: select streaming fields.: Field   Field Name          Type        Field Description
-                                            0       Symbol              String      Ticker symbol in upper case.
+                                            key     Symbol              String      Ticker symbol in upper case.
                                             1       Error Code          double      Specifies if there is any error.
                                             2       Story Datetime      long        Headline’s datetime in milliseconds since epoch
                                             3       Headline ID         String      Unique ID for the headline
@@ -1649,7 +1691,7 @@ class TDStreamerClient():
             TYPE: String
 
             EXAMPLES:
-            SessionObject.data_request_news_headline(command = "SUBS", keys = 'AAPL', fields = '0,1,2,3,4,5,6,7,8,9,10')
+            SessionObject.data_request_news_headline(command = "SUBS", keys = 'SPY, AAPL', fields = '0,1,2,3,4,5,6,7,8,9,10')
         '''
 
         subs_request = ["NEWS_HEADLINE", "21", command, keys, fields]
