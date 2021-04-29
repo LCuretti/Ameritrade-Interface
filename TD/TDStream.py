@@ -95,8 +95,8 @@ class TDStreamerClient():
         # Define a flag that will determine if we are streaming or not.
         self.UserLogoff = True             # To avoid the Keep alive function Login back when user logged off.
 
-        # define the time since last message recieved
-        self.last_message_time = 0
+        # define the time since last rate calculated
+        self.last_rate_time = datetime.now()
 
         # default sleep behavior
         self.sleep = 2
@@ -155,6 +155,8 @@ class TDStreamerClient():
 
         # Intialize the Client
         self.TDAPI = TDAPI
+
+        self.dataLen = 0  #in order to measure download rate
 
         self.today = datetime.today()-timedelta(hours=self.hours)
 
@@ -306,7 +308,13 @@ class TDStreamerClient():
     def _websocket_on_message(self, message):
 
         # Handle the messages it receives
-        self.last_message_time = datetime.now()
+
+        if (datetime.now() - self.last_rate_time).seconds > 1:
+            self.downloadRate = self.dataLen
+            self.dataLen = 0
+            self.last_rate_time = datetime.now()
+            #print(str(self.downloadRate) + ' bytes/sec')
+        self.dataLen += len(message)
 
         # Load the message
         message = json.loads(message, strict = False)
@@ -324,7 +332,6 @@ class TDStreamerClient():
         elif 'data' in msg_keys:
             self._handle_response_data(content = message)
 
-
     def _handle_response_response(self, content = None):
         #the first response is the login answer, if it ok set the LoggedIn to True
         if (content['response'][0]['command'] == 'LOGIN') and (content['response'][0]['content']['code'] == 0):
@@ -332,11 +339,6 @@ class TDStreamerClient():
             ##self.UserLogoff = False
             print("Logged in at:".ljust(50) + str(datetime.fromtimestamp(int(content['response'][0]['timestamp'])/1000))[:-3])
 
-            # Method that run in a separate thread and check if websocket connection is alive.  #### this part comes from response
-            self.watchDog_thread = Thread(name='watchDog_thread',
-                                target=self._watchDog,
-                                daemon = True)
-            self.watchDog_thread.start()
             if self.cache_data:
                 self.cache_store_thread = Thread(name='cache_store_thread',
                                     target=self._cache_store,
@@ -351,7 +353,6 @@ class TDStreamerClient():
         else:
             response = str(str(content['response'][0]['service'])+" "+str(content['response'][0]['content']['msg'])+" at:")
             print(response.ljust(50) + str(datetime.fromtimestamp(int(content['response'][0]['timestamp'])/1000))[:-3])
-
 
         self.response_types['response'].append(content)
 
@@ -492,19 +493,6 @@ class TDStreamerClient():
                     self.data_request_account_activity()
                     print('Miss sequence')
         self.subscriptions[service]['keys-seq'][content['key']] = content['seq']
-
-
-    def _watchDog(self):
-        # Method that run in a separate thread and check if websocket connection is alive
-        while self.IsLoggedIn:
-            Delta = 12 - (datetime.now() - self.last_message_time).seconds
-            #print('alive')
-            # WatchDog to check if connection is still alive
-            if Delta < 0:
-                #send Request so if connection is down it will rise an excemtion (on_close) that will run keep_alive
-                self.QOS_request(qoslevel = '0')
-                Delta = 1
-            time.sleep(Delta)
 
     def _subs_manage(self, subscription):
 
