@@ -107,7 +107,7 @@ class TDAPI():
 
         self.Auth = TDAuthentication(TDCFG)
         self.Auth.authenticate()
-        print("TDAPI Initialized at: "+str(datetime.now()))
+        print("TDAPI Initialized at:".ljust(50)+str(datetime.now()))
 
     def __repr__(self):
         '''
@@ -357,7 +357,7 @@ class TDAPI():
         response = requests.put(url=url, headers = merged_headers, data = json.dumps(dataPayload), verify = True)
 
         if response.status_code == 204:
-            return "Preferences successfully updated."
+            return print("Preferences successfully updated.\n")
         else:
             return response.content
 
@@ -1079,7 +1079,7 @@ class TDAPI():
         response = requests.post(url = url, headers = merged_headers, data = json.dumps(payload), verify = True)
 
         if response.status_code == 201:
-            return "Watchlist {} was successfully created.".format(name)
+            return print("Watchlist {} was successfully created.\n".format(name))
         else:
             return response.content
 
@@ -1187,7 +1187,7 @@ class TDAPI():
         response = requests.delete(url = url, headers = merged_headers, verify = True)
 
         if response.status_code == 204:
-            return "Watchlist {} was successfully deleted.".format(watchlist_id)
+            return print("Watchlist {} was successfully deleted.\n".format(watchlist_id))
         else:
             return response.content
 
@@ -1239,7 +1239,7 @@ class TDAPI():
         response = requests.patch(url = url, headers = merged_headers, data = json.dumps(payload), verify = True)
 
         if response.status_code == 204:
-            return "Watchlist {} was successfully updated.".format(watchlist_id)
+            return print("Watchlist {} was successfully updated.\n".format(watchlist_id))
         else:
             return response.content
 
@@ -1291,7 +1291,7 @@ class TDAPI():
         #make the request
         response = requests.put(url = url, headers = merged_headers, data = json.dumps(payload), verify = True)
         if response.status_code == 204:
-            return "Watchlist {} was successfully repleaced.".format(watchlist_id)
+            return print("Watchlist {} was successfully repleaced.\n".format(watchlist_id))
         else:
             return response.content
 
@@ -1507,7 +1507,7 @@ class TDAPI():
         response = requests.delete(url=url, headers = merged_headers, verify = True)
 
         if response.status_code == 200:
-            return "Order {} was successfully CANCELED.".format(order_id)
+            return print("Order {} was successfully CANCELED.\n".format(order_id))
         else:
             return response.content
 
@@ -1599,7 +1599,7 @@ class TDAPI():
         response = requests.post(url = url, headers = merged_headers, data = json.dumps(payload), verify = True)
 
         if response.status_code == 201:
-            return "New {} order was successfully created.".format(symbol)
+            return print("New {} order was successfully created.\n".format(symbol))
         else:
             return response.content
 
@@ -1696,7 +1696,7 @@ class TDAPI():
         response = requests.put(url = url, headers = merged_headers, data = json.dumps(payload), verify = True)
 
         if response.status_code == 201:
-            return "Order {} was successfully replaced.".format(order_Id)
+            return print("Order {} was successfully replaced.\n".format(order_Id))
         else:
             return response.content
 
@@ -1841,7 +1841,7 @@ class TDAPI():
         response = requests.delete(url=url, headers = merged_headers, verify = True)
 
         if response.status_code == 200:
-            return "SavedOrder {} was successfully CANCELED.".format(savedorder_id)
+            return print("SavedOrder {} was successfully CANCELED.\n".format(savedorder_id))
         else:
             return response.content
 
@@ -1933,7 +1933,7 @@ class TDAPI():
         response = requests.post(url = url, headers = merged_headers, data = json.dumps(payload), verify = True)
 
         if response.status_code == 201:
-            return "SavedOrder {} was successfully created.".format(symbol)
+            return print("SavedOrder {} was successfully created.\n".format(symbol))
         else:
             return response.content
 
@@ -2029,7 +2029,7 @@ class TDAPI():
         response = requests.put(url = url, headers = merged_headers, data = json.dumps(payload), verify = True)
 
         if response.status_code == 201:
-            return "SavedOrder {} was successfully replaced.".format(savedorder_Id)
+            return print("SavedOrder {} was successfully replaced.\n".format(savedorder_Id))
         else:
             return response.content
 
@@ -2069,7 +2069,7 @@ class TDAPI():
         response = requests.post(url = url, headers = merged_headers, data = json.dumps(order), verify = True)
 
         if response.status_code == 201:
-            return "New costumed order was successfully created."
+            return print("New costumed order was successfully created.\n")
         else:
             return response.content
 
@@ -2111,7 +2111,7 @@ class TDAPI():
         response = requests.put(url = url, headers = merged_headers, data = json.dumps(order), verify = True)
 
         if response.status_code == 201:
-            return "Order {} was successfully replaced.".format(order_Id)
+            return print("Order {} was successfully replaced.\n".format(order_Id))
         else:
             return response.content
 
@@ -2147,7 +2147,7 @@ class TDAPI():
         response = requests.post(url = url, headers = merged_headers, data = json.dumps(savedorder), verify = True)
 
         if response.status_code == 201:
-            return "New costumed savedorder was successfully created."
+            return print("New costumed savedorder was successfully created.\n")
         else:
             return response.content
 
@@ -2188,6 +2188,6 @@ class TDAPI():
         response = requests.put(url = url, headers = merged_headers, data = json.dumps(order), verify = True)
 
         if response.status_code == 201:
-            return "Savedorder {} was successfully replaced.".format(savedorder_Id)
+            return print("Savedorder {} was successfully replaced.\n".format(savedorder_Id))
         else:
             return response.content

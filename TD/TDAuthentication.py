@@ -96,7 +96,7 @@ class TDAuthentication(object):
         if os.path.isfile('./{}refreshtoken.pickle'.format(self.account_id)) and not self.refresh_cache:
             os.remove('./{}refreshtoken.pickle'.format(self.account_id))
 
-        print("TDAuthentication Initialized at: "+str(datetime.now()))
+        print("TDAuthentication Initialized at:".ljust(50)+str(datetime.now()))
 
     def __repr__(self):
         '''
