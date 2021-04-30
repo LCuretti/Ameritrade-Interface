@@ -95,9 +95,6 @@ class TDStreamerClient():
         # Define a flag that will determine if we are streaming or not.
         self.UserLogoff = True             # To avoid the Keep alive function Login back when user logged off.
 
-        # define the time since last rate calculated
-        self.last_rate_time = datetime.now()
-
         # default sleep behavior
         self.sleep = 2
 
@@ -309,11 +306,6 @@ class TDStreamerClient():
 
         # Handle the messages it receives
 
-        if (datetime.now() - self.last_rate_time).seconds > 1:
-            self.downloadRate = self.dataLen
-            self.dataLen = 0
-            self.last_rate_time = datetime.now()
-            #print(str(self.downloadRate) + ' bytes/sec')
         self.dataLen += len(message)
 
         # Load the message
@@ -332,12 +324,24 @@ class TDStreamerClient():
         elif 'data' in msg_keys:
             self._handle_response_data(content = message)
 
+    def _downloadRate(self):
+        # Method that run in a separate thread and check if websocket connection is alive
+        while self.IsLoggedIn:
+            self.downloadRate = self.dataLen
+            self.dataLen = 0
+            #print(str(self.downloadRate) + ' bytes/sec')
+            time.sleep(1)
+
     def _handle_response_response(self, content = None):
         #the first response is the login answer, if it ok set the LoggedIn to True
         if (content['response'][0]['command'] == 'LOGIN') and (content['response'][0]['content']['code'] == 0):
             self.IsLoggedIn = True
             ##self.UserLogoff = False
             print("Logged in at:".ljust(50) + str(datetime.fromtimestamp(int(content['response'][0]['timestamp'])/1000))[:-3])
+            self.downloadRate_thread = Thread(name='downloadRate_thread',
+                                              target=self._downloadRate,
+                                              daemon = True)
+            self.downloadRate_thread.start()
 
             if self.cache_data:
                 self.cache_store_thread = Thread(name='cache_store_thread',
