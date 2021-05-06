@@ -195,6 +195,19 @@ class TDStreamerClient():
             # grab the URI
             self.uri = "wss://" + userPrincipalsResponse['streamerInfo']['streamerSocketUrl'] + "/ws"
 
+
+    def _is_connected(self):
+        # check internet connectivity
+        try:
+            # connect to the host -- tells us if the host is actually
+            # reachable
+            socket.create_connection(("www.google.com", 80))
+            return True
+        except OSError:
+            pass
+        return False
+
+
     def _keep_alive(self):
         #Method that recover connection after it drop
 
@@ -210,29 +223,19 @@ class TDStreamerClient():
         self.connect()
 
         #subscribe everything as it was before interruption
-        for service in self.subscriptions:
+        if self.IsLoggedIn:
+            for service in self.subscriptions:
 
-            if self.subscriptions[service]['subscribed']:
+                if self.subscriptions[service]['subscribed']:
 
-                ID = self.subscriptions[service]['ID']
+                    ID = self.subscriptions[service]['ID']
 
-                fields = self.subscriptions[service]['fields']
-                keys = ", ".join(list(self.subscriptions[service]['keys-seq'].keys()))
+                    fields = self.subscriptions[service]['fields']
+                    keys = ", ".join(list(self.subscriptions[service]['keys-seq'].keys()))
 
-                subs_request = [service, ID, 'SUBS', keys, fields]
+                    subs_request = [service, ID, 'SUBS', keys, fields]
 
-                self.subs_request(subs_request)
-
-    def _is_connected(self):
-        # check internet connectivity
-        try:
-            # connect to the host -- tells us if the host is actually
-            # reachable
-            socket.create_connection(("www.google.com", 80))
-            return True
-        except OSError:
-            pass
-        return False
+                    self.subs_request(subs_request)
 
 
     def connect(self):
@@ -240,6 +243,8 @@ class TDStreamerClient():
         self.UserLogoff = False
 
         if not self.IsLoggedIn:
+
+            self.error = False
 
             # Grab the Streaming Keys
             self._grab_streaming_keys()
@@ -265,14 +270,12 @@ class TDStreamerClient():
             # Start the thread.
             self.td_websocket_thread.start()
 
-            t = 0
-            while not self.IsLoggedIn:
-                time.sleep(self.sleep)
-                t += 1
-                if t > 5:
-                    self._keep_alive()
+            while not self.IsLoggedIn and not self.error:
+                print('Waiting on "Logged in" message')
+                time.sleep(1)
 
-            print("Streamer started")
+            if self.IsLoggedIn:
+                print("Streamer started")
         else:
             print("Streamer already started")
 
@@ -284,10 +287,11 @@ class TDStreamerClient():
 
     def _websocket_on_error(self, error):
 
+        self.error = True
         error_str = str(error)
 
-        print('Error:')
         print('-'*40)
+        print('Error:')
         print(error_str)
 
     def _websocket_on_close(self):
@@ -295,8 +299,8 @@ class TDStreamerClient():
         # No longer Logged In
         self.IsLoggedIn = False
 
-        print('Websocket is Closed.')
         print('-'*40)
+        print('Websocket is Closed.')
         print('Time Closed:'.ljust(50)+str(datetime.now()))
 
         if not self.UserLogoff: #if user logged off
@@ -387,10 +391,10 @@ class TDStreamerClient():
                 if data['service'] == 'ACCT_ACTIVITY':
                     for j in range(0, len(data['content'])):
                         content = data['content'][j]
-                        #service, timestamp, seq, key, account#, MessageType, Content
+                        #service, timestamp, seq, key, MessageType, account#, Content
                         if content['2'] != 'SUBSCRIBED' and content['2'] != 'ERROR':
                             data_tuple = (data['service'], data['timestamp'], content['key'], content['seq'], content['2'],
-                                          content['1'], xmltodict.parse(content['3'])[str(content['2']+"Message")])
+                                          content['1'], xmltodict.parse(content['3'], dict_constructor=dict)[str(content['2']+"Message")]) #dict to avoid OrderedDict
                         else:
                             data_tuple = (data['service'], data['timestamp'], content['key'], content['seq'], content['2'])
                         #data_tuple = (data['service'], data['timestamp'], json.dumps(data['content'][j]))
