@@ -108,6 +108,10 @@ class TDAPI():
         self.Auth = TDAuthentication(TDCFG)
         self.Auth.authenticate()
         print("TDAPI Initialized at:".ljust(50)+str(datetime.now()))
+        self.account_id = TDCFG.account_id
+
+
+
 
     def __repr__(self):
         '''
@@ -199,6 +203,7 @@ class TDAPI():
             SessionObject.get_preferences(account = 'MyAccountNumber')
         '''
 
+        account = account or self.account_id
         #define the endpoint
         endpoint = '/accounts/{}/preferences'.format(account)
 
@@ -211,7 +216,7 @@ class TDAPI():
         # return teh resposnse of the get request.
         return requests.get(url=url, headers=merged_headers, verify = True).json()
 
-    def get_streamer_subscription_keys(self, accounts = None):
+    def get_streamer_subscription_keys(self, account = None):
 
         '''
             SubscriptionKey for provided accounts or default accounts.
@@ -224,16 +229,16 @@ class TDAPI():
 
             EXAMPLES:
 
-            SessionObject.get_streamer_subscription_keys(accounts = ['MyAccountNumber1'])
-            SessionObject.get_streamer_subscription_keys(accounts = ['MyAccountNumber1', 'MyAccountNumber2'])
+            SessionObject.get_streamer_subscription_keys(account = ['MyAccountNumber1'])
+            SessionObject.get_streamer_subscription_keys(account = ['MyAccountNumber1', 'MyAccountNumber2'])
 
         '''
-
+        account = account or self.account_id
         # becasue we have a list arguments, prep it for the request.
-        accounts = self.prepare_parameter_list(parameter_list = accounts)
+        account = self.prepare_parameter_list(parameter_list = account)
 
         #buid the params dictionary
-        data = {'accountIds':accounts}
+        data = {'accountIds':account}
 
         # define the endpoint
         endpoint = '/userprincipals/streamersubscriptionkeys'
@@ -343,7 +348,7 @@ class TDAPI():
             SessionObject.update_preferences(account = 'MyAccountNumber', dataPayload = Payload)
 
         '''
-
+        account = account or self.account_id
         #define teh endpoint
         endpoint = '/accounts/{}/preferences'.format(account)
 
@@ -365,7 +370,7 @@ class TDAPI():
     ################ Account ####################
     ##########################################'''
 
-    def get_accounts(self, account = 'all', fields = None):
+    def get_accounts(self, account = None, fields = None):
 
         '''
             Account balances, positions, and orders for a specific account.
@@ -393,7 +398,7 @@ class TDAPI():
             SessionObject.get_accounts(account = 'My AccountNumber', fields = ['orders', 'positions'])
 
         '''
-
+        account = account or self.account_id
         # because we have a listarguments prep it for request.
         fields = self.prepare_parameter_list(parameter_list = fields)
 
@@ -470,6 +475,8 @@ class TDAPI():
 
         #grab the original headers we have sttored.
         merged_headers = self.headers()
+
+        account = account or self.account_id
 
         # if transaction_id is not made, it means we need to make a request to the get_transaction endpoint.
         if transaction_id:
@@ -1066,6 +1073,7 @@ class TDAPI():
         #define the payload
         payload = {"name": name, "watchlistItems": watchlistItems}
 
+        account = account or self.account_id
         # define the endpoint
         endpoint = '/accounts/{}/watchlists'.format(account)
 
@@ -1083,7 +1091,7 @@ class TDAPI():
         else:
             return response.content
 
-    def get_watchlist_accounts(self, account = 'all'):
+    def get_watchlist_accounts(self, account = None):
 
         '''
             Serves as the mechanism to make a request to the "Get Watchlist for single accoun"and
@@ -1103,7 +1111,7 @@ class TDAPI():
             SessionObject.get_watchlist_accounts(account = 'MyAccount1')
 
         '''
-
+        account = account or self.account_id
         #define the endpoint
         if account == 'all':
             endpoint = '/accounts/watchlists'
@@ -1139,7 +1147,7 @@ class TDAPI():
             SessionObject.get_watchlist(account = 'MyAccount1', watchlist_id = 'MyWatchlistId')
 
         '''
-
+        account = account or self.account_id
         # define the endpoint
         endpoint = '/accounts/{}/watchlists/{}'.format(account, watchlist_id)
 
@@ -1173,7 +1181,7 @@ class TDAPI():
             SessionObject.delete_watchlist(account = 'MyAccount1', watchlist_id = 'MyWatchlistId')
 
         '''
-
+        account = account or self.account_id
         #define the endpoint
         endpoint = '/accounts/{}/watchlists/{}'.format(account, watchlist_id)
 
@@ -1227,6 +1235,7 @@ class TDAPI():
         payload = {"name": name_new, "watchlistItems": watchlistItems_to_add}
 
         #define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/watchlists/{}'.format(account, watchlist_id)
 
         #build the url
@@ -1280,6 +1289,7 @@ class TDAPI():
         payload = {"name": name_new, "watchlistItems": watchlistItems_new}
 
         # define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/watchlists/{}'.format(account, watchlist_id)
 
         #build the url
@@ -1356,6 +1366,7 @@ class TDAPI():
         data = {"maxResults": max_results, "fromEnteredTime": from_entered_time, "toEnteredTime": to_entered_time, "status": status}
 
         #define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/orders'.format(account)
 
         #build the url
@@ -1421,6 +1432,7 @@ class TDAPI():
 
         '''
         # define the payload
+        account = account or self.account_id
         data = {"accountId":account,
                 "maxResults": max_results,
                 "fromEnteredTime": from_entered_time,
@@ -1462,6 +1474,7 @@ class TDAPI():
         '''
 
         #define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/orders/{}'.format(account, order_id)
 
         #build the url
@@ -1495,6 +1508,7 @@ class TDAPI():
         '''
 
         #define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/orders/{}'.format(account, order_id)
 
         #build the url
@@ -1587,6 +1601,7 @@ class TDAPI():
                   }
 
         # define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/orders'.format(account)
 
         #build the url
@@ -1684,6 +1699,7 @@ class TDAPI():
                   }
 
         # define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/orders/{}'.format(account,order_Id)
 
         #build the url
@@ -1763,6 +1779,7 @@ class TDAPI():
         data = {"maxResults": max_results, "fromEnteredTime": from_entered_time, "toEnteredTime": to_entered_time, "status": status}
 
         #define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/savedorders'.format(account)
 
         #build the url
@@ -1796,6 +1813,7 @@ class TDAPI():
         '''
 
         #define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/savedorders/{}'.format(account, savedorder_id)
 
         #build the url
@@ -1829,6 +1847,7 @@ class TDAPI():
         '''
 
         #define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/savedorders/{}'.format(account, savedorder_id)
 
         #build the url
@@ -1921,6 +1940,7 @@ class TDAPI():
                   }
 
         # define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/savedorders'.format(account)
 
         #build the url
@@ -2017,6 +2037,7 @@ class TDAPI():
                   }
 
         # define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/savedorders/{}'.format(account,savedorder_Id)
 
         #build the url
@@ -2057,6 +2078,7 @@ class TDAPI():
         '''
 
         # define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/orders'.format(account)
 
         #build the url
@@ -2099,6 +2121,7 @@ class TDAPI():
 
 
         # define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/orders/{}'.format(account,order_Id)
 
         #build the url
@@ -2135,6 +2158,7 @@ class TDAPI():
         '''
 
         # define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/savedorders'.format(account)
 
         #build the url
@@ -2176,6 +2200,7 @@ class TDAPI():
 
 
         # define the endpoint
+        account = account or self.account_id
         endpoint = '/accounts/{}/savedorders/{}'.format(account,savedorder_Id)
 
         #build the url
